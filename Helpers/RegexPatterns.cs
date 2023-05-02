@@ -1,4 +1,4 @@
-namespace OnlineStoreAPI.Utils
+namespace OnlineStoreAPI.Helpers
 {
     public class RegexPatterns
     {

@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using OnlineStoreAPI.Utils;
+using OnlineStoreAPI.Helpers;
+using DotNetEnv;
 
 namespace OnlineStoreAPI.Entities
 {
@@ -15,7 +12,7 @@ namespace OnlineStoreAPI.Entities
 
         public DbSet<User> Users { get; set; }
         public DbSet<UserAddress> UserAddresses { get; set; }
-        
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<User>();
@@ -31,7 +28,9 @@ namespace OnlineStoreAPI.Entities
             .AddJsonFile("appsettings.json")
             .Build();
 
-            var connectionString = configuration.GetConnectionString("OnlineStoreDbContext");
+            Env.Load();
+
+            var connectionString = Environment.GetEnvironmentVariable("ONLINE_STORE_CONNECTION_STRING");
             optionsBuilder.UseNpgsql(connectionString);
         }
     }

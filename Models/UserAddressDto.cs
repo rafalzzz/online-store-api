@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using OnlineStoreAPI.Utils;
-
 namespace OnlineStoreAPI.Models
 {
     public class UserAddressDto

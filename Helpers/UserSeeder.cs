@@ -1,11 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using OnlineStoreAPI.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace OnlineStoreAPI.Utils
+namespace OnlineStoreAPI.Helpers
 {
     public class UserSeeder
     {
