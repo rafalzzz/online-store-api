@@ -16,6 +16,7 @@ var connectionString = Environment.GetEnvironmentVariable(connectionStringEnv);
 
 builder.Services.AddDbContext<OnlineStoreDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
 builder.Services.AddControllers();
 

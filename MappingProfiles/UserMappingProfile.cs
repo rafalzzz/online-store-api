@@ -8,7 +8,6 @@ namespace OnlineStoreAPI.MappingProfiles
     {
         public UserMappingProfile()
         {
-            CreateMap<RegisterUserDto, User>();
         }
     }
 }
