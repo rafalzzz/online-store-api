@@ -5,11 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Services;
 using OnlineStoreAPI.Helpers;
-using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
-
-Env.Load();
 
 builder.Services.AddScoped<IUserService, UserService>();
 
