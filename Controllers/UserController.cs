@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using OnlineStoreAPI.Helpers;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Services;
 
@@ -21,6 +22,11 @@ namespace OnlineStoreAPI.Controllers
             {
                 return BadRequest(ModelState);
             }
+
+            if (_userService.CheckIfEmailExist(registerUserDto.Email))
+            {
+                return Conflict(ErrorMessages.RegisterUserEmailError);
+            };
 
             var id = _userService.CreateUser(registerUserDto);
 
