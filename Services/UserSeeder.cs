@@ -1,7 +1,7 @@
 using OnlineStoreAPI.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace OnlineStoreAPI.Helpers
+namespace OnlineStoreAPI.Services
 {
     public class UserSeeder
     {

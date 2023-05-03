@@ -1,6 +1,4 @@
 using AutoMapper;
-using OnlineStoreAPI.Entities;
-using OnlineStoreAPI.Models;
 
 namespace OnlineStoreAPI.MappingProfiles
 {

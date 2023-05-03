@@ -7,8 +7,8 @@ namespace OnlineStoreAPI.Services
 {
     public interface IUserService
     {
-        int CreateUser(RegisterUserDto userDto);
-        bool CheckIfEmailExist(string email);
+        int? CreateUser(RegisterUserDto userDto);
+        bool? VerifyUser(LoginUserDto loginUserDto);
     }
 
     public class UserService : IUserService
@@ -24,16 +24,23 @@ namespace OnlineStoreAPI.Services
             _passwordHasher = passwordHasher;
         }
 
-        public bool CheckIfEmailExist(string email)
+        public User GetUserByEmail(string email)
         {
-            var emailExist = _dbContext.Users.FirstOrDefault(user => user.Email == email);
+            var user = _dbContext.Users.FirstOrDefault(user => user.Email == email);
+            return user;
+        }
 
-            if (emailExist is null) return false;
+        private bool CheckIfEmailExist(string email)
+        {
+            var user = GetUserByEmail(email);
+            if (user is null) return false;
             return true;
         }
 
-        public int CreateUser(RegisterUserDto registerUserDto)
+        public int? CreateUser(RegisterUserDto registerUserDto)
         {
+            if (CheckIfEmailExist(registerUserDto.Email)) return null;
+
             var passwordHash = _passwordHasher.Hash(registerUserDto.Password);
 
             var newUser = new User
@@ -48,6 +55,23 @@ namespace OnlineStoreAPI.Services
             _dbContext.SaveChanges();
 
             return newUser.Id;
+        }
+
+        public bool? VerifyUser(LoginUserDto loginUserDto)
+        {
+            var user = GetUserByEmail(loginUserDto.Email);
+
+            if (user is null)
+            {
+                return null;
+            }
+
+            var isPasswordCorrect = _passwordHasher.Verify(
+                    user.Password,
+                    loginUserDto.Password
+                );
+
+            return isPasswordCorrect;
         }
     }
 }

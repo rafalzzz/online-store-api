@@ -23,14 +23,32 @@ namespace OnlineStoreAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            if (_userService.CheckIfEmailExist(registerUserDto.Email))
-            {
-                return Conflict(ErrorMessages.RegisterUserEmailError);
-            };
-
             var id = _userService.CreateUser(registerUserDto);
 
+            if (id is null)
+            {
+                return Conflict(ErrorMessages.RegisterUserEmailError);
+            }
+
             return Created($"/api/users/{id}", null);
+        }
+
+        [HttpPost("login")]
+        public ActionResult LoginUser([FromBody] LoginUserDto loginUserDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            bool? userIsVerified = _userService.VerifyUser(loginUserDto);
+
+            return userIsVerified switch
+            {
+                null => NotFound(ErrorMessages.LoginUserWrongEmailError),
+                false => BadRequest(ErrorMessages.LoginUserWrongPasswordError),
+                true => Ok(),
+            };
         }
     }
 }
