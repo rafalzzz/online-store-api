@@ -1,10 +1,10 @@
-using System;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Services;
 using OnlineStoreAPI.Helpers;
+using FluentValidation;
+using OnlineStoreAPI.Requests;
+using OnlineStoreAPI.Validations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,9 +16,14 @@ var connectionString = Environment.GetEnvironmentVariable(connectionStringEnv);
 
 builder.Services.AddDbContext<OnlineStoreDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();
+builder.Services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
+
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
 builder.Services.AddControllers();
+
 
 var app = builder.Build();
 

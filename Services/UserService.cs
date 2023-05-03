@@ -1,14 +1,14 @@
 
 using OnlineStoreAPI.Entities;
-using OnlineStoreAPI.Models;
+using OnlineStoreAPI.Requests;
 using AutoMapper;
 
 namespace OnlineStoreAPI.Services
 {
     public interface IUserService
     {
-        int? CreateUser(RegisterUserDto userDto);
-        bool? VerifyUser(LoginUserDto loginUserDto);
+        int? CreateUser(RegisterRequest userDto);
+        bool? VerifyUser(LoginRequest loginUserDto);
     }
 
     public class UserService : IUserService
@@ -37,7 +37,7 @@ namespace OnlineStoreAPI.Services
             return true;
         }
 
-        public int? CreateUser(RegisterUserDto registerUserDto)
+        public int? CreateUser(RegisterRequest registerUserDto)
         {
             if (CheckIfEmailExist(registerUserDto.Email)) return null;
 
@@ -57,7 +57,7 @@ namespace OnlineStoreAPI.Services
             return newUser.Id;
         }
 
-        public bool? VerifyUser(LoginUserDto loginUserDto)
+        public bool? VerifyUser(LoginRequest loginUserDto)
         {
             var user = GetUserByEmail(loginUserDto.Email);
 
