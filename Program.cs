@@ -12,12 +12,6 @@ using OnlineStoreAPI.Variables;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-builder.Services.Configure<JwtSettings>(jwtSettings);
-
-new CorsConfiguration(builder.Services);
-new AuthenticationConfiguration(jwtSettings, builder.Services);
-
 // DB context
 EnvironmentHelper.EnsureConnectionStringVariableExists(EnvironmentVariables.ConnectionString);
 var connectionString = Environment.GetEnvironmentVariable(EnvironmentVariables.ConnectionString);
@@ -26,6 +20,13 @@ builder.Services.AddDbContext<OnlineStoreDbContext>(options => options.UseNpgsql
 
 // AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+// Configuration
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+builder.Services.Configure<JwtSettings>(jwtSettings);
+
+new CorsConfiguration(builder.Services);
+new AuthenticationConfiguration(jwtSettings, builder.Services);
 
 // Additional Services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -42,10 +43,9 @@ var app = builder.Build();
 
 app.UseCors(Cors.CorsPolicy);
 
+app.UseMiddleware<CookieAuthenticationMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.UseMiddleware<JwtCookieMiddleware>();
 
 app.UseHttpsRedirection();
 

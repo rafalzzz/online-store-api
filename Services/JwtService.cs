@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OnlineStoreAPI.Models;
+using OnlineStoreAPI.Variables;
 
 namespace OnlineStoreAPI.Services
 {
@@ -12,6 +13,7 @@ namespace OnlineStoreAPI.Services
     {
         string GenerateToken(string userEmail);
         CookieOptions GetCookieOptions();
+        string ExtractUserEmailFromToken(string token);
     }
 
     public class JwtService : IJwtService
@@ -30,8 +32,8 @@ namespace OnlineStoreAPI.Services
             new Claim(ClaimTypes.Email, userEmail),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
+            var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var expires = DateTime.Now.AddMinutes(_jwtSettings.TokenLifeTime);
 
@@ -59,6 +61,36 @@ namespace OnlineStoreAPI.Services
             };
 
             return cookieOptions;
+        }
+
+        public string ExtractUserEmailFromToken(string token)
+        {
+            try
+            {
+                var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var validationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                };
+
+                var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
+                var userEmailClaim = principal.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Email);
+
+                if (userEmailClaim != null)
+                {
+                    return userEmailClaim.Value;
+                }
+            }
+            catch (Exception)
+            {
+                // Handle exception if token is invalid or expired
+            }
+
+            return null;
         }
     }
 }

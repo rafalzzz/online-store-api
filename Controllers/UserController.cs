@@ -1,5 +1,6 @@
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Models;
@@ -91,9 +92,13 @@ namespace OnlineStoreAPI.Controllers
         }
 
         [HttpGet("user-data")]
+        [Authorize]
         public ActionResult GetUserData()
         {
-            return Ok();
+            string authorizationHeader = HttpContext.Request.Headers[Headers.Authorization];
+            string token = authorizationHeader.Split(" ")[1];
+            string email = _jwtService.ExtractUserEmailFromToken(token);
+            return Ok(email);
         }
     }
 }

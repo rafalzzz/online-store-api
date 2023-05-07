@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using OnlineStoreAPI.Variables;
 
 namespace OnlineStoreAPI.Configuration
 {
@@ -8,7 +9,7 @@ namespace OnlineStoreAPI.Configuration
     {
         public AuthenticationConfiguration(IConfigurationSection jwtSettings, IServiceCollection services)
         {
-            var secret = jwtSettings["Secret"];
+            var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
             var issuer = jwtSettings["Issuer"];
             var audience = jwtSettings["Audience"];
 
@@ -26,10 +27,12 @@ namespace OnlineStoreAPI.Configuration
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = issuer,
                     ValidAudience = audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
                     ClockSkew = TimeSpan.Zero
                 };
             });
+
+            services.Configure<AuthenticationConfiguration>(jwtSettings);
         }
     }
 }
