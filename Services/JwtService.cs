@@ -55,8 +55,8 @@ namespace OnlineStoreAPI.Services
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true, // Set to `false`, when using HTTP instead of HTTPS
-                SameSite = SameSiteMode.None, // Important for cookies between different domains
+                Secure = true,
+                SameSite = SameSiteMode.None,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(tokenLifeTime)
             };
 
@@ -87,7 +87,7 @@ namespace OnlineStoreAPI.Services
             }
             catch (Exception)
             {
-                // Handle exception if token is invalid or expired
+                // If token is invalid or expired actions
             }
 
             return null;
