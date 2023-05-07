@@ -10,7 +10,8 @@ namespace OnlineStoreAPI.Services
 {
     public interface IJwtService
     {
-        CookieOptions GenerateCookieWithToken(string userEmail);
+        string GenerateToken(string userEmail);
+        CookieOptions GetCookieOptions();
     }
 
     public class JwtService : IJwtService
@@ -22,7 +23,7 @@ namespace OnlineStoreAPI.Services
             _jwtSettings = jwtSettings.Value;
         }
 
-        private string GenerateToken(string userEmail)
+        public string GenerateToken(string userEmail)
         {
             var claims = new[]
             {
@@ -45,17 +46,16 @@ namespace OnlineStoreAPI.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public CookieOptions GenerateCookieWithToken(string userEmail)
+        public CookieOptions GetCookieOptions()
         {
-            string token = GenerateToken(userEmail);
-            var tokenLifeTime = TimeSpan.FromMinutes(Convert.ToDouble(_jwtSettings.TokenLifeTime));
+            double tokenLifeTime = TimeSpan.FromMinutes(Convert.ToDouble(_jwtSettings.TokenLifeTime)).TotalMinutes;
 
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true, // Set to `false`, when using HTTP instead of HTTPS
                 SameSite = SameSiteMode.None, // Important for cookies between different domains
-                Expires = DateTimeOffset.UtcNow.AddMinutes(60)
+                Expires = DateTimeOffset.UtcNow.AddMinutes(tokenLifeTime)
             };
 
             return cookieOptions;

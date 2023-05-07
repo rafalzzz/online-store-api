@@ -83,10 +83,17 @@ namespace OnlineStoreAPI.Controllers
                 case VerifyUserError.WrongPassword:
                     return BadRequest("Incorrect password");
                 default:
-                    var cookieOptions = _jwtService.GenerateCookieWithToken((string)userEmail);
-                    Response.Cookies.Append(CookieNames.AccessToken, (string)userEmail, cookieOptions);
+                    string token = _jwtService.GenerateToken((string)userEmail);
+                    var cookieOptions = _jwtService.GetCookieOptions();
+                    Response.Cookies.Append(CookieNames.AccessToken, token, cookieOptions);
                     return Ok();
             }
+        }
+
+        [HttpGet("user-data")]
+        public ActionResult GetUserData()
+        {
+            return Ok();
         }
     }
 }
