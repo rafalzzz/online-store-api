@@ -1,9 +1,11 @@
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
+using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Requests;
 using OnlineStoreAPI.Services;
+using OnlineStoreAPI.Variables;
 
 namespace OnlineStoreAPI.Controllers
 {
@@ -13,12 +15,14 @@ namespace OnlineStoreAPI.Controllers
         private readonly IUserService _userService;
         private readonly IValidator<RegisterRequest> _registerValidator;
         private readonly IValidator<LoginRequest> _loginValidator;
+        private readonly IJwtService _jwtService;
 
-        public UserController(IUserService userService, IValidator<RegisterRequest> registerValidator, IValidator<LoginRequest> loginValidator)
+        public UserController(IUserService userService, IValidator<RegisterRequest> registerValidator, IValidator<LoginRequest> loginValidator, IJwtService jwtService)
         {
             _userService = userService;
             _registerValidator = registerValidator;
             _loginValidator = loginValidator;
+            _jwtService = jwtService;
         }
 
         private IEnumerable<ValidationError> GetValidationErrorsResult(ValidationResult validationResult)
@@ -70,14 +74,19 @@ namespace OnlineStoreAPI.Controllers
                 return BadRequest(validationResultErrors);
             }
 
-            bool? userIsVerified = _userService.VerifyUser(loginUserDto);
+            object userEmail = _userService.VerifyUser(loginUserDto);
 
-            return userIsVerified switch
+            switch (userEmail)
             {
-                null => NotFound("Account with the provided email address doest not exist"),
-                false => BadRequest("Incorrect password"),
-                true => Ok(),
-            };
+                case VerifyUserError.EmailNoExist:
+                    return NotFound("Account with the provided email address doest not exist");
+                case VerifyUserError.WrongPassword:
+                    return BadRequest("Incorrect password");
+                default:
+                    var cookieOptions = _jwtService.GenerateCookieWithToken((string)userEmail);
+                    Response.Cookies.Append(CookieNames.AccessToken, (string)userEmail, cookieOptions);
+                    return Ok();
+            }
         }
     }
 }

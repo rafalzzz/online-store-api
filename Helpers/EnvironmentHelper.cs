@@ -1,4 +1,5 @@
 using DotNetEnv;
+using OnlineStoreAPI.Variables;
 
 namespace OnlineStoreAPI.Helpers
 {
@@ -12,11 +13,11 @@ namespace OnlineStoreAPI.Helpers
 
             if (isConnectionString is null)
             {
-                string DB_PORT = Environment.GetEnvironmentVariable("DB_PORT");
-                string DB_HOST = Environment.GetEnvironmentVariable("DB_HOST");
-                string DB_DATABASE = Environment.GetEnvironmentVariable("DB_DATABASE");
-                string DB_USERNAME = Environment.GetEnvironmentVariable("DB_USERNAME");
-                string DB_PASSWORD = Environment.GetEnvironmentVariable("DB_PASSWORD");
+                string DB_PORT = Environment.GetEnvironmentVariable(EnvironmentVariables.DbPort);
+                string DB_HOST = Environment.GetEnvironmentVariable(EnvironmentVariables.DbHost);
+                string DB_DATABASE = Environment.GetEnvironmentVariable(EnvironmentVariables.DbDatabase);
+                string DB_USERNAME = Environment.GetEnvironmentVariable(EnvironmentVariables.DbUsername);
+                string DB_PASSWORD = Environment.GetEnvironmentVariable(EnvironmentVariables.DbPassword);
 
                 string combinedVariable = $"Host={DB_HOST};Port={DB_PORT};Database={DB_DATABASE};Username={DB_USERNAME};Password={DB_PASSWORD}";
 

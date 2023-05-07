@@ -2,13 +2,14 @@
 using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Requests;
 using AutoMapper;
+using OnlineStoreAPI.Enums;
 
 namespace OnlineStoreAPI.Services
 {
     public interface IUserService
     {
         int? CreateUser(RegisterRequest userDto);
-        bool? VerifyUser(LoginRequest loginUserDto);
+        object VerifyUser(LoginRequest loginUserDto);
     }
 
     public class UserService : IUserService
@@ -16,12 +17,18 @@ namespace OnlineStoreAPI.Services
         private readonly OnlineStoreDbContext _dbContext;
         private readonly IMapper _mapper;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IJwtService _jwtService;
 
-        public UserService(OnlineStoreDbContext dbContext, IMapper mapper, IPasswordHasher passwordHasher)
+        public UserService(
+            OnlineStoreDbContext dbContext,
+            IMapper mapper,
+            IPasswordHasher passwordHasher,
+            IJwtService jwtService)
         {
             _dbContext = dbContext;
             _mapper = mapper;
             _passwordHasher = passwordHasher;
+            _jwtService = jwtService;
         }
 
         public User GetUserByEmail(string email)
@@ -57,13 +64,13 @@ namespace OnlineStoreAPI.Services
             return newUser.Id;
         }
 
-        public bool? VerifyUser(LoginRequest loginUserDto)
+        public object VerifyUser(LoginRequest loginUserDto)
         {
             var user = GetUserByEmail(loginUserDto.Email);
 
             if (user is null)
             {
-                return null;
+                return VerifyUserError.EmailNoExist;
             }
 
             var isPasswordCorrect = _passwordHasher.Verify(
@@ -71,7 +78,12 @@ namespace OnlineStoreAPI.Services
                     loginUserDto.Password
                 );
 
-            return isPasswordCorrect;
+            if (!isPasswordCorrect)
+            {
+                return VerifyUserError.WrongPassword;
+            }
+
+            return user.Email;
         }
     }
 }
