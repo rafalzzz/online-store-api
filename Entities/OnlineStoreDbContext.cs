@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using OnlineStoreAPI.Helpers;
 using DotNetEnv;
+using OnlineStoreAPI.Services;
 
 namespace OnlineStoreAPI.Entities
 {

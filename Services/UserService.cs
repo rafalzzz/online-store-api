@@ -1,32 +1,89 @@
 
 using OnlineStoreAPI.Entities;
-using OnlineStoreAPI.Models;
+using OnlineStoreAPI.Requests;
 using AutoMapper;
+using OnlineStoreAPI.Enums;
 
 namespace OnlineStoreAPI.Services
 {
     public interface IUserService
     {
-        int CreateUser(RegisterUserDto userDto);
+        int? CreateUser(RegisterRequest userDto);
+        object VerifyUser(LoginRequest loginUserDto);
     }
 
     public class UserService : IUserService
     {
         private readonly OnlineStoreDbContext _dbContext;
         private readonly IMapper _mapper;
+        private readonly IPasswordHasher _passwordHasher;
+        private readonly IJwtService _jwtService;
 
-        public UserService(OnlineStoreDbContext dbContext, IMapper mapper)
+        public UserService(
+            OnlineStoreDbContext dbContext,
+            IMapper mapper,
+            IPasswordHasher passwordHasher,
+            IJwtService jwtService)
         {
             _dbContext = dbContext;
             _mapper = mapper;
+            _passwordHasher = passwordHasher;
+            _jwtService = jwtService;
         }
-        public int CreateUser(RegisterUserDto registerUserDto)
+
+        public User GetUserByEmail(string email)
         {
-            var newUser = _mapper.Map<User>(registerUserDto);
+            var user = _dbContext.Users.FirstOrDefault(user => user.Email == email);
+            return user;
+        }
+
+        private bool CheckIfEmailExist(string email)
+        {
+            var user = GetUserByEmail(email);
+            if (user is null) return false;
+            return true;
+        }
+
+        public int? CreateUser(RegisterRequest registerUserDto)
+        {
+            if (CheckIfEmailExist(registerUserDto.Email)) return null;
+
+            var passwordHash = _passwordHasher.Hash(registerUserDto.Password);
+
+            var newUser = new User
+            {
+                FirstName = registerUserDto.FirstName,
+                LastName = registerUserDto.LastName,
+                Email = registerUserDto.Email,
+                Password = passwordHash,
+            };
+
             _dbContext.Users.Add(newUser);
             _dbContext.SaveChanges();
 
             return newUser.Id;
+        }
+
+        public object VerifyUser(LoginRequest loginUserDto)
+        {
+            var user = GetUserByEmail(loginUserDto.Email);
+
+            if (user is null)
+            {
+                return VerifyUserError.EmailNoExist;
+            }
+
+            var isPasswordCorrect = _passwordHasher.Verify(
+                    user.Password,
+                    loginUserDto.Password
+                );
+
+            if (!isPasswordCorrect)
+            {
+                return VerifyUserError.WrongPassword;
+            }
+
+            return user.Email;
         }
     }
 }

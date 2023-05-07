@@ -1,6 +1,4 @@
 using AutoMapper;
-using OnlineStoreAPI.Entities;
-using OnlineStoreAPI.Models;
 
 namespace OnlineStoreAPI.MappingProfiles
 {
@@ -8,7 +6,6 @@ namespace OnlineStoreAPI.MappingProfiles
     {
         public UserMappingProfile()
         {
-            CreateMap<RegisterUserDto, User>();
         }
     }
 }

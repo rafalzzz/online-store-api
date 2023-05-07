@@ -11,7 +11,7 @@ using OnlineStoreAPI.Entities;
 namespace OnlineStoreAPI.Migrations
 {
     [DbContext(typeof(OnlineStoreDbContext))]
-    [Migration("20230502110108_Init")]
+    [Migration("20230502220620_Init")]
     partial class Init
     {
         /// <inheritdoc />
