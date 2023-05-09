@@ -85,10 +85,18 @@ namespace OnlineStoreAPI.Controllers
                     return BadRequest("Incorrect password");
                 default:
                     string token = _jwtService.GenerateToken((string)userEmail);
-                    var cookieOptions = _jwtService.GetCookieOptions();
+                    CookieOptions cookieOptions = _jwtService.GetCookieOptions();
                     Response.Cookies.Append(CookieNames.AccessToken, token, cookieOptions);
                     return Ok();
             }
+        }
+
+        [HttpPost("logout")]
+        public ActionResult Logout()
+        {
+            CookieOptions cookieOptions = _jwtService.RemoveAccessTokenCookieOptions();
+            Response.Cookies.Append(CookieNames.AccessToken, string.Empty, cookieOptions);
+            return Ok();
         }
 
         [HttpGet("user-data")]
@@ -100,5 +108,7 @@ namespace OnlineStoreAPI.Controllers
             string email = _jwtService.ExtractUserEmailFromToken(token);
             return Ok(email);
         }
+
+
     }
 }

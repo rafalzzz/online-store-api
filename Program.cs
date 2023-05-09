@@ -27,6 +27,7 @@ builder.Services.Configure<JwtSettings>(jwtSettings);
 
 new CorsConfiguration(builder.Services);
 new AuthenticationConfiguration(jwtSettings, builder.Services);
+builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger); ;
 
 // Additional Services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -41,13 +42,22 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+app.UseHttpsRedirection();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Online store API");
+    });
+}
+
 app.UseCors(Cors.CorsPolicy);
 
 app.UseMiddleware<CookieAuthenticationMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.UseHttpsRedirection();
 
 app.MapControllers();
 
