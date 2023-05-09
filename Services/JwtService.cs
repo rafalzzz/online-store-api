@@ -13,6 +13,7 @@ namespace OnlineStoreAPI.Services
     {
         string GenerateToken(string userEmail);
         CookieOptions GetCookieOptions();
+        CookieOptions RemoveAccessTokenCookieOptions();
         string ExtractUserEmailFromToken(string token);
     }
 
@@ -58,6 +59,19 @@ namespace OnlineStoreAPI.Services
                 Secure = true,
                 SameSite = SameSiteMode.None,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(tokenLifeTime)
+            };
+
+            return cookieOptions;
+        }
+
+        public CookieOptions RemoveAccessTokenCookieOptions()
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddDays(-1)
             };
 
             return cookieOptions;
