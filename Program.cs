@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using NLog.Web;
 using FluentValidation;
 using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Services;
@@ -25,9 +26,10 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 builder.Services.Configure<JwtSettings>(jwtSettings);
 
+builder.Host.UseNLog();
 new CorsConfiguration(builder.Services);
 new AuthenticationConfiguration(jwtSettings, builder.Services);
-builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger); ;
+builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger);
 
 // Additional Services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -55,6 +57,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors(Cors.CorsPolicy);
 
+app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<CookieAuthenticationMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
