@@ -100,7 +100,7 @@ namespace OnlineStoreAPI.Controllers
         }
 
         [HttpGet("user-data")]
-        [Authorize]
+        [Authorize(Policy = "AdminOnly")]
         public ActionResult GetUserData()
         {
             string authorizationHeader = HttpContext.Request.Headers[Headers.Authorization];
@@ -108,7 +108,5 @@ namespace OnlineStoreAPI.Controllers
             string email = _jwtService.ExtractUserEmailFromToken(token);
             return Ok(email);
         }
-
-
     }
 }

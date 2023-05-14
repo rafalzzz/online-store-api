@@ -32,7 +32,8 @@ namespace OnlineStoreAPI.Services
             {
             new Claim(ClaimTypes.Email, userEmail),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-        };
+            new Claim("admin", "true"),
+            };
             var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
