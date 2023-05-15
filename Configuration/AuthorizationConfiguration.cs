@@ -5,10 +5,7 @@ namespace OnlineStoreAPI.Configuration
     {
         public AuthorizationConfiguration(IServiceCollection services)
         {
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy("AdminOnly", policy => policy.RequireClaim("admin", "true"));
-            });
+            services.AddAuthorization();
         }
     }
 }
