@@ -9,6 +9,7 @@ using OnlineStoreAPI.Requests;
 using OnlineStoreAPI.Validations;
 using OnlineStoreAPI.Configuration;
 using OnlineStoreAPI.Middleware;
+using OnlineStoreAPI.Authentication;
 using OnlineStoreAPI.Variables;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,10 +31,7 @@ builder.Host.UseNLog();
 new CorsConfiguration(builder.Services);
 new AuthenticationConfiguration(jwtSettings, builder.Services);
 new AuthorizationConfiguration(builder.Services);
-builder.Services.AddAuthorization(options =>
-            {
-                options.AddPolicy("AdminOnly", policy => policy.RequireClaim("admin", "true"));
-            });
+builder.Services.AddAuthorization();
 builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger);
 
 // Additional Services
