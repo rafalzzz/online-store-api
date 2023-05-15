@@ -31,7 +31,6 @@ builder.Host.UseNLog();
 new CorsConfiguration(builder.Services);
 new AuthenticationConfiguration(jwtSettings, builder.Services);
 new AuthorizationConfiguration(builder.Services);
-builder.Services.AddAuthorization();
 builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger);
 
 // Additional Services
