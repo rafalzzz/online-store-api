@@ -30,6 +30,18 @@ namespace OnlineStoreAPI.Configuration
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
                     ClockSkew = TimeSpan.Zero
                 };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        if (context.Request.Cookies.ContainsKey("access_token"))
+                        {
+                            context.Token = context.Request.Cookies["access_token"];
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             services.Configure<AuthenticationConfiguration>(jwtSettings);

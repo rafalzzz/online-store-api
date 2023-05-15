@@ -1,7 +1,9 @@
+using System.Security.Claims;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OnlineStoreAPI.Authorization;
 using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Requests;
@@ -101,14 +103,10 @@ namespace OnlineStoreAPI.Controllers
 
         [HttpGet("user-data")]
         [Authorize]
+        [AdminOnly]
         public ActionResult GetUserData()
         {
-            string authorizationHeader = HttpContext.Request.Headers[Headers.Authorization];
-            string token = authorizationHeader.Split(" ")[1];
-            string email = _jwtService.ExtractUserEmailFromToken(token);
-            return Ok(email);
+            return Ok();
         }
-
-
     }
 }
