@@ -106,7 +106,15 @@ namespace OnlineStoreAPI.Controllers
         [AdminOnly]
         public ActionResult GetUserData()
         {
-            return Ok();
+            var emailClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email);
+
+            if (emailClaim == null)
+            {
+                return NotFound();
+            }
+
+            var userEmail = emailClaim.Value;
+            return Ok(emailClaim.Value);
         }
     }
 }
