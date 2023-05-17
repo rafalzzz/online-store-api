@@ -9,14 +9,13 @@ namespace OnlineStoreAPI.Configuration
         {
             options.SwaggerDoc("v1", new OpenApiInfo { Title = "Online store API", Version = "v1" });
 
-            // Dodaj konfigurację autoryzacji
             options.AddSecurityDefinition("cookieAuth", new OpenApiSecurityScheme
             {
                 Type = SecuritySchemeType.ApiKey,
                 In = ParameterLocation.Cookie,
                 Name = "access_token",
                 Scheme = "Bearer",
-                Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
+                Description = "JWT Authorization using the Bearer scheme. Enter your token in the text input below.",
                 BearerFormat = "JWT"
             });
 

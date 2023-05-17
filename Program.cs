@@ -1,15 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using NLog.Web;
 using FluentValidation;
+using OnlineStoreAPI.Authentication;
+using OnlineStoreAPI.Authorization;
+using OnlineStoreAPI.Configuration;
 using OnlineStoreAPI.Entities;
-using OnlineStoreAPI.Services;
 using OnlineStoreAPI.Helpers;
+using OnlineStoreAPI.Middleware;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Requests;
+using OnlineStoreAPI.Services;
 using OnlineStoreAPI.Validations;
-using OnlineStoreAPI.Configuration;
-using OnlineStoreAPI.Middleware;
-using OnlineStoreAPI.Authentication;
 using OnlineStoreAPI.Variables;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,7 +37,7 @@ builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger);
 // Additional Services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddTransient<IJwtService, JwtService>();
 
 // Validators
 builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();

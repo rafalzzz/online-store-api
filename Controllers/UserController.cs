@@ -3,7 +3,6 @@ using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OnlineStoreAPI.Authorization;
 using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Requests;
@@ -102,8 +101,7 @@ namespace OnlineStoreAPI.Controllers
         }
 
         [HttpGet("user-data")]
-        [Authorize]
-        [AdminOnly]
+        [Authorize(Policy = PolicyNames.AdminOnly)]
         public ActionResult GetUserData()
         {
             var emailClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email);
