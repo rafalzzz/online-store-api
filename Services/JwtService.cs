@@ -4,7 +4,6 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Variables;
 
@@ -15,6 +14,7 @@ namespace OnlineStoreAPI.Services
         string GenerateToken(string userEmail);
         CookieOptions GetCookieOptions();
         CookieOptions RemoveAccessTokenCookieOptions();
+        ClaimsPrincipal GetPrincipalsFromToken(string token);
     }
 
     public class JwtService : IJwtService
@@ -63,6 +63,32 @@ namespace OnlineStoreAPI.Services
             };
 
             return cookieOptions;
+        }
+
+        public ClaimsPrincipal GetPrincipalsFromToken(string token)
+        {
+            try
+            {
+                var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var validationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                };
+
+                var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
+
+                return principal;
+            }
+            catch (Exception)
+            {
+                // If token is invalid or expired actions
+            }
+
+            return null;
         }
 
         public CookieOptions RemoveAccessTokenCookieOptions()
