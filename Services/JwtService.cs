@@ -11,7 +11,8 @@ namespace OnlineStoreAPI.Services
 {
     public interface IJwtService
     {
-        string GenerateToken(string userEmail);
+        string GenerateAccessToken(string userEmail);
+        string GenerateResetPasswordToken(string userEmail);
         CookieOptions GetCookieOptions();
         CookieOptions RemoveAccessTokenCookieOptions();
         ClaimsPrincipal GetPrincipalsFromToken(string token);
@@ -20,13 +21,18 @@ namespace OnlineStoreAPI.Services
     public class JwtService : IJwtService
     {
         private readonly JwtSettings _jwtSettings;
+        private readonly ResetPasswordSettings _resetPasswordSettings;
 
-        public JwtService(IOptions<JwtSettings> jwtSettings)
+        public JwtService(
+            IOptions<JwtSettings> jwtSettings,
+            IOptions<ResetPasswordSettings> resetPasswordSettings
+            )
         {
             _jwtSettings = jwtSettings.Value;
+            _resetPasswordSettings = resetPasswordSettings.Value;
         }
 
-        public string GenerateToken(string userEmail)
+        public string GenerateAccessToken(string userEmail)
         {
             var claims = new[]
             {
@@ -34,6 +40,7 @@ namespace OnlineStoreAPI.Services
             new Claim(ClaimTypes.Role, Roles.Admin),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
+
             var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -42,6 +49,30 @@ namespace OnlineStoreAPI.Services
             var token = new JwtSecurityToken(
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
+                claims,
+                expires,
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public string GenerateResetPasswordToken(string userEmail)
+        {
+            var claims = new[]
+            {
+            new Claim(ClaimTypes.Email, userEmail),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            };
+
+            var resetPasswordSecretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.ResetPasswordSecretKey);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(resetPasswordSecretKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expires = DateTime.Now.AddMinutes(_resetPasswordSettings.TokenLifeTime);
+
+            var token = new JwtSecurityToken(
+                issuer: _resetPasswordSettings.Issuer,
+                audience: _resetPasswordSettings.Audience,
                 claims: claims,
                 expires: expires,
                 signingCredentials: creds

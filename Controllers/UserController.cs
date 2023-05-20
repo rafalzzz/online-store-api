@@ -17,13 +17,21 @@ namespace OnlineStoreAPI.Controllers
         private readonly IUserService _userService;
         private readonly IValidator<RegisterRequest> _registerValidator;
         private readonly IValidator<LoginRequest> _loginValidator;
+        private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
         private readonly IJwtService _jwtService;
 
-        public UserController(IUserService userService, IValidator<RegisterRequest> registerValidator, IValidator<LoginRequest> loginValidator, IJwtService jwtService)
+        public UserController(
+            IUserService userService,
+            IValidator<RegisterRequest> registerValidator,
+            IValidator<LoginRequest> loginValidator,
+            IValidator<ResetPasswordRequest> resetPasswordValidator,
+            IJwtService jwtService
+            )
         {
             _userService = userService;
             _registerValidator = registerValidator;
             _loginValidator = loginValidator;
+            _resetPasswordValidator = resetPasswordValidator;
             _jwtService = jwtService;
         }
 
@@ -85,11 +93,34 @@ namespace OnlineStoreAPI.Controllers
                 case VerifyUserError.WrongPassword:
                     return BadRequest("Incorrect password");
                 default:
-                    string token = _jwtService.GenerateToken((string)userEmail);
+                    string token = _jwtService.GenerateAccessToken((string)userEmail);
                     CookieOptions cookieOptions = _jwtService.GetCookieOptions();
                     Response.Cookies.Append(CookieNames.AccessToken, token, cookieOptions);
                     return Ok();
             }
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> SendResetPasswordToken([FromBody] ResetPasswordRequest resetPasswordDto)
+        {
+            var resetPasswordRequestValidation = _resetPasswordValidator.Validate(resetPasswordDto);
+            var validationResultErrors = GetValidationErrorsResult(resetPasswordRequestValidation);
+
+            if (validationResultErrors != null)
+            {
+                return BadRequest(validationResultErrors);
+            }
+
+            bool emailExist = _userService.CheckIfEmailExist(resetPasswordDto.Email);
+
+            if (!emailExist)
+            {
+                return BadRequest("Account with the provided email address doest not exist");
+            }
+
+            await _userService.SendResetPasswordToken(resetPasswordDto.Email);
+
+            return Ok();
         }
 
         [HttpPost("logout")]
