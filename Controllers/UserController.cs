@@ -113,8 +113,6 @@ namespace OnlineStoreAPI.Controllers
 
             bool emailExist = _userService.CheckIfEmailExist(resetPasswordDto.Email);
 
-            Console.WriteLine(emailExist);
-
             if (!emailExist)
             {
                 return BadRequest("Account with the provided email address doest not exist");
