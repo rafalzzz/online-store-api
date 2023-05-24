@@ -126,7 +126,7 @@ namespace OnlineStoreAPI.Controllers
             return Ok();
         }
 
-        [HttpPost("change-password")]
+        [HttpPut("change-password")]
         public ActionResult ChangePassword([FromBody] ChangePasswordRequest changePasswordDto)
         {
             var changePasswordRequestValidation = _changePasswordValidator.Validate(changePasswordDto);
