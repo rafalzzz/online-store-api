@@ -1,9 +1,11 @@
 
 using System.IdentityModel.Tokens.Jwt;
+using System.Security;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using OnlineStoreAPI.Middleware;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Variables;
 
@@ -12,24 +14,29 @@ namespace OnlineStoreAPI.Services
     public interface IJwtService
     {
         string GenerateAccessToken(string userEmail);
-        string GenerateResetPasswordToken(string userEmail);
         CookieOptions GetCookieOptions();
         CookieOptions RemoveAccessTokenCookieOptions();
         ClaimsPrincipal GetPrincipalsFromToken(string token);
+        string GenerateResetPasswordToken(string userEmail);
+        string ExtractEmailFromResetPasswordToken(string token);
     }
 
     public class JwtService : IJwtService
     {
         private readonly JwtSettings _jwtSettings;
         private readonly ResetPasswordSettings _resetPasswordSettings;
+        private readonly ILogger<RequestLoggingMiddleware> _logger;
 
         public JwtService(
             IOptions<JwtSettings> jwtSettings,
-            IOptions<ResetPasswordSettings> resetPasswordSettings
+            IOptions<ResetPasswordSettings> resetPasswordSettings,
+            ILogger<RequestLoggingMiddleware> logger
             )
         {
             _jwtSettings = jwtSettings.Value;
             _resetPasswordSettings = resetPasswordSettings.Value;
+            _logger = logger;
+
         }
 
         public string GenerateAccessToken(string userEmail)
@@ -51,30 +58,6 @@ namespace OnlineStoreAPI.Services
                 audience: _jwtSettings.Audience,
                 claims,
                 expires,
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
-        public string GenerateResetPasswordToken(string userEmail)
-        {
-            var claims = new[]
-            {
-            new Claim(ClaimTypes.Email, userEmail),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            };
-
-            var resetPasswordSecretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.ResetPasswordSecretKey);
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(resetPasswordSecretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var expires = DateTime.Now.AddMinutes(_resetPasswordSettings.TokenLifeTime);
-
-            var token = new JwtSecurityToken(
-                issuer: _resetPasswordSettings.Issuer,
-                audience: _resetPasswordSettings.Audience,
-                claims: claims,
-                expires: expires,
                 signingCredentials: creds
             );
 
@@ -133,6 +116,68 @@ namespace OnlineStoreAPI.Services
             };
 
             return cookieOptions;
+        }
+
+        public string GenerateResetPasswordToken(string userEmail)
+        {
+            var claims = new[]
+            {
+            new Claim(ClaimTypes.Email, userEmail),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            };
+
+            var resetPasswordSecretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.ResetPasswordSecretKey);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(resetPasswordSecretKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expires = DateTime.Now.AddMinutes(_resetPasswordSettings.TokenLifeTime);
+
+            var token = new JwtSecurityToken(
+                issuer: _resetPasswordSettings.Issuer,
+                audience: _resetPasswordSettings.Audience,
+                claims: claims,
+                expires: expires,
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public string ExtractEmailFromResetPasswordToken(string token)
+        {
+            try
+            {
+                var resetPasswordSecretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.ResetPasswordSecretKey);
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(resetPasswordSecretKey));
+
+                var tokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = key,
+                    ValidateIssuer = true,
+                    ValidIssuer = _resetPasswordSettings.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = _resetPasswordSettings.Audience,
+                    ValidateLifetime = true
+                };
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+                var jwtSecurityToken = securityToken as JwtSecurityToken;
+
+                if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    throw new SecurityException("Incorrect token");
+                }
+
+                var emailClaim = principal.FindFirst(ClaimTypes.Email);
+                return emailClaim?.Value;
+            }
+            catch (SecurityException exception)
+            {
+                var errorMessage = $"Token validation error. Time: {DateTime.Now}. Error message: {exception.Message}";
+                _logger.LogError(errorMessage);
+                return null;
+            }
         }
     }
 }

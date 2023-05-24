@@ -13,6 +13,7 @@ namespace OnlineStoreAPI.Services
         int? CreateUser(RegisterRequest userDto);
         object VerifyUser(LoginRequest loginUserDto);
         Task SendResetPasswordToken(string email);
+        bool ChangeUserPassword(string email, string password);
     }
 
     public class UserService : IUserService
@@ -104,6 +105,18 @@ namespace OnlineStoreAPI.Services
             string emailMessage = $"Click on the link to confirm your email: {tokenLink}";
 
             await _emailService.SendEmailAsync(email, emailTitle, emailMessage);
+        }
+
+        public bool ChangeUserPassword(string email, string password)
+        {
+            var user = GetUserByEmail(email);
+
+            if (user is null) return false;
+
+            user.Password = password;
+            _dbContext.SaveChanges();
+
+            return true;
         }
     }
 }

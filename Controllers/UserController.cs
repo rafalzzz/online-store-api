@@ -18,6 +18,7 @@ namespace OnlineStoreAPI.Controllers
         private readonly IValidator<RegisterRequest> _registerValidator;
         private readonly IValidator<LoginRequest> _loginValidator;
         private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
+        private readonly IValidator<ChangePasswordRequest> _changePasswordValidator;
         private readonly IJwtService _jwtService;
 
         public UserController(
@@ -25,6 +26,7 @@ namespace OnlineStoreAPI.Controllers
             IValidator<RegisterRequest> registerValidator,
             IValidator<LoginRequest> loginValidator,
             IValidator<ResetPasswordRequest> resetPasswordValidator,
+            IValidator<ChangePasswordRequest> changePasswordValidator,
             IJwtService jwtService
             )
         {
@@ -32,6 +34,7 @@ namespace OnlineStoreAPI.Controllers
             _registerValidator = registerValidator;
             _loginValidator = loginValidator;
             _resetPasswordValidator = resetPasswordValidator;
+            _changePasswordValidator = changePasswordValidator;
             _jwtService = jwtService;
         }
 
@@ -74,7 +77,7 @@ namespace OnlineStoreAPI.Controllers
         }
 
         [HttpPost("login")]
-        public ActionResult LoginRequest([FromBody] LoginRequest loginUserDto)
+        public ActionResult Login([FromBody] LoginRequest loginUserDto)
         {
             var loginRequestValidation = _loginValidator.Validate(loginUserDto);
             var validationResultErrors = GetValidationErrorsResult(loginRequestValidation);
@@ -101,7 +104,7 @@ namespace OnlineStoreAPI.Controllers
         }
 
         [HttpPost("reset-password")]
-        public async Task<IActionResult> SendResetPasswordToken([FromBody] ResetPasswordRequest resetPasswordDto)
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest resetPasswordDto)
         {
             var resetPasswordRequestValidation = _resetPasswordValidator.Validate(resetPasswordDto);
             var validationResultErrors = GetValidationErrorsResult(resetPasswordRequestValidation);
@@ -119,6 +122,34 @@ namespace OnlineStoreAPI.Controllers
             }
 
             await _userService.SendResetPasswordToken(resetPasswordDto.Email);
+
+            return Ok();
+        }
+
+        [HttpPost("change-password")]
+        public ActionResult ChangePassword([FromBody] ChangePasswordRequest changePasswordDto)
+        {
+            var changePasswordRequestValidation = _changePasswordValidator.Validate(changePasswordDto);
+            var validationResultErrors = GetValidationErrorsResult(changePasswordRequestValidation);
+
+            if (validationResultErrors != null)
+            {
+                return BadRequest(validationResultErrors);
+            }
+
+            var email = _jwtService.ExtractEmailFromResetPasswordToken(changePasswordDto.Token);
+
+            if (email is null)
+            {
+                return Unauthorized(new { message = "Token has expired" });
+            }
+
+            var isPasswordChanged = _userService.ChangeUserPassword(email, changePasswordDto.Password);
+
+            if (!isPasswordChanged)
+            {
+                return BadRequest("Wrong email");
+            }
 
             return Ok();
         }
