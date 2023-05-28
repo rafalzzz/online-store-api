@@ -37,47 +37,63 @@ namespace OnlineStoreAPI.Services
             _jwtSettings = jwtSettings.Value;
             _resetPasswordSettings = resetPasswordSettings.Value;
             _logger = logger;
-
         }
 
-        public string GenerateAccessToken(string userEmail)
+        private SigningCredentials GetSigningCredentials(string secretKey)
         {
-            var claims = new[]
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            return new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        }
+
+        private CookieOptions CreateCookieOptions(double tokenLifeTime, bool remove = false)
+        {
+            var cookieOptions = new CookieOptions
             {
-            new Claim(ClaimTypes.Email, userEmail),
-            new Claim(ClaimTypes.Role, Roles.Admin),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = remove ? DateTimeOffset.UtcNow.AddDays(-1) : DateTimeOffset.UtcNow.AddMinutes(tokenLifeTime)
             };
 
-            var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var expires = DateTime.Now.AddMinutes(_jwtSettings.TokenLifeTime);
+            return cookieOptions;
+        }
+
+        private string GenerateToken(string userEmail, string issuer, string audience, string secretKey, double tokenLifeTime, bool isAdmin = false)
+        {
+            var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Email, userEmail),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+            if (isAdmin)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, Roles.Admin));
+            }
+
+            var creds = GetSigningCredentials(secretKey);
+            var expires = DateTime.Now.AddMinutes(tokenLifeTime);
 
             var token = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
-                claims,
-                expires,
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                expires: expires,
                 signingCredentials: creds
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        public string GenerateAccessToken(string userEmail)
+        {
+            var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
+            return GenerateToken(userEmail, _jwtSettings.Issuer, _jwtSettings.Audience, secretKey, _jwtSettings.TokenLifeTime, true);
+        }
+
         public CookieOptions GetCookieOptions()
         {
-            double tokenLifeTime = TimeSpan.FromMinutes(Convert.ToDouble(_jwtSettings.TokenLifeTime)).TotalMinutes;
-
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Expires = DateTimeOffset.UtcNow.AddMinutes(tokenLifeTime)
-            };
-
-            return cookieOptions;
+            return CreateCookieOptions(_jwtSettings.TokenLifeTime);
         }
 
         public ClaimsPrincipal GetPrincipalsFromToken(string token)
@@ -89,7 +105,7 @@ namespace OnlineStoreAPI.Services
                 var validationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+                    IssuerSigningKey = GetSigningCredentials(secretKey).Key,
                     ValidateIssuer = false,
                     ValidateAudience = false
                 };
@@ -109,47 +125,20 @@ namespace OnlineStoreAPI.Services
 
         public CookieOptions RemoveAccessTokenCookieOptions()
         {
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Expires = DateTimeOffset.UtcNow.AddDays(-1)
-            };
-
-            return cookieOptions;
+            return CreateCookieOptions(_jwtSettings.TokenLifeTime, true);
         }
 
         public string GenerateResetPasswordToken(string userEmail)
         {
-            var claims = new[]
-            {
-            new Claim(ClaimTypes.Email, userEmail),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            };
-
             var resetPasswordSecretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.ResetPasswordSecretKey);
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(resetPasswordSecretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var expires = DateTime.Now.AddMinutes(_resetPasswordSettings.TokenLifeTime);
-
-            var token = new JwtSecurityToken(
-                issuer: _resetPasswordSettings.Issuer,
-                audience: _resetPasswordSettings.Audience,
-                claims: claims,
-                expires: expires,
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return GenerateToken(userEmail, _resetPasswordSettings.Issuer, _resetPasswordSettings.Audience, resetPasswordSecretKey, _resetPasswordSettings.TokenLifeTime);
         }
-
         public object ExtractEmailFromResetPasswordToken(string token)
         {
             try
             {
                 var resetPasswordSecretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.ResetPasswordSecretKey);
-                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(resetPasswordSecretKey));
+                var key = GetSigningCredentials(resetPasswordSecretKey).Key;
 
                 var tokenValidationParameters = new TokenValidationParameters
                 {
