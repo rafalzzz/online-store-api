@@ -113,7 +113,8 @@ namespace OnlineStoreAPI.Services
 
             if (user is null) return false;
 
-            user.Password = password;
+            var passwordHash = _passwordHasher.Hash(password);
+            user.Password = passwordHash;
             _dbContext.SaveChanges();
 
             return true;

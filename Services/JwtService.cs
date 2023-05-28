@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Middleware;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Variables;
@@ -18,7 +19,7 @@ namespace OnlineStoreAPI.Services
         CookieOptions RemoveAccessTokenCookieOptions();
         ClaimsPrincipal GetPrincipalsFromToken(string token);
         string GenerateResetPasswordToken(string userEmail);
-        string ExtractEmailFromResetPasswordToken(string token);
+        object ExtractEmailFromResetPasswordToken(string token);
     }
 
     public class JwtService : IJwtService
@@ -97,9 +98,10 @@ namespace OnlineStoreAPI.Services
 
                 return principal;
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                // If token is invalid or expired actions
+                var errorMessage = $"Access token validation error. Time: {DateTime.Now}. Error message: {exception.Message}";
+                _logger.LogError(errorMessage);
             }
 
             return null;
@@ -142,7 +144,7 @@ namespace OnlineStoreAPI.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public string ExtractEmailFromResetPasswordToken(string token)
+        public object ExtractEmailFromResetPasswordToken(string token)
         {
             try
             {
@@ -172,11 +174,23 @@ namespace OnlineStoreAPI.Services
                 var emailClaim = principal.FindFirst(ClaimTypes.Email);
                 return emailClaim?.Value;
             }
+            catch (SecurityTokenExpiredException)
+            {
+                var errorMessage = $"Token has expired. Time: {DateTime.Now}.";
+                _logger.LogError(errorMessage);
+                return VerifyResetPasswordToken.TokenHasExpired;
+            }
             catch (SecurityException exception)
             {
-                var errorMessage = $"Token validation error. Time: {DateTime.Now}. Error message: {exception.Message}";
+                var errorMessage = $"Reset password token validation error. Time: {DateTime.Now}. Error message: {exception.Message}";
                 _logger.LogError(errorMessage);
-                return null;
+                return VerifyResetPasswordToken.TokenValidationError;
+            }
+            catch (Exception exception)
+            {
+                var errorMessage = $"Unexpected error during token validation. Time: {DateTime.Now}. Error message: {exception.Message}";
+                _logger.LogError(errorMessage);
+                return VerifyResetPasswordToken.TokenValidationError;
             }
         }
     }

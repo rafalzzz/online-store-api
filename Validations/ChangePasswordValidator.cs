@@ -8,10 +8,6 @@ namespace OnlineStoreAPI.Validations
     {
         public ChangePasswordRequestValidator()
         {
-            RuleFor(requestBody => requestBody.Token)
-            .Cascade(CascadeMode.Stop)
-            .Token();
-
             RuleFor(requestBody => requestBody.Password)
             .Cascade(CascadeMode.Stop)
             .Password();

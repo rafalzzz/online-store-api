@@ -126,8 +126,8 @@ namespace OnlineStoreAPI.Controllers
             return Ok();
         }
 
-        [HttpPut("change-password")]
-        public ActionResult ChangePassword([FromBody] ChangePasswordRequest changePasswordDto)
+        [HttpPut("change-password/{token}")]
+        public ActionResult ChangePassword([FromBody] ChangePasswordRequest changePasswordDto, [FromRoute] string token)
         {
             var changePasswordRequestValidation = _changePasswordValidator.Validate(changePasswordDto);
             var validationResultErrors = GetValidationErrorsResult(changePasswordRequestValidation);
@@ -137,21 +137,26 @@ namespace OnlineStoreAPI.Controllers
                 return BadRequest(validationResultErrors);
             }
 
-            var email = _jwtService.ExtractEmailFromResetPasswordToken(changePasswordDto.Token);
+            var result = _jwtService.ExtractEmailFromResetPasswordToken(token);
 
-            if (email is null)
+            switch (result)
             {
-                return Unauthorized(new { message = "Token has expired" });
+                case VerifyResetPasswordToken expiredToken when expiredToken == VerifyResetPasswordToken.TokenHasExpired:
+                    return Unauthorized("Token has expired");
+
+                case VerifyResetPasswordToken invalidToken when invalidToken == VerifyResetPasswordToken.TokenValidationError:
+                    return Unauthorized("Invalid token");
+
+                default:
+                    var isPasswordChanged = _userService.ChangeUserPassword((string)result, changePasswordDto.Password);
+
+                    if (!isPasswordChanged)
+                    {
+                        return BadRequest("Wrong email");
+                    }
+
+                    return Ok("Password has changed successfully");
             }
-
-            var isPasswordChanged = _userService.ChangeUserPassword(email, changePasswordDto.Password);
-
-            if (!isPasswordChanged)
-            {
-                return BadRequest("Wrong email");
-            }
-
-            return Ok();
         }
 
         [HttpPost("logout")]
