@@ -1,9 +1,12 @@
 
 using System.IdentityModel.Tokens.Jwt;
+using System.Security;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using OnlineStoreAPI.Enums;
+using OnlineStoreAPI.Middleware;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Variables;
 
@@ -11,37 +14,69 @@ namespace OnlineStoreAPI.Services
 {
     public interface IJwtService
     {
-        string GenerateToken(string userEmail);
+        string GenerateAccessToken(string userEmail);
         CookieOptions GetCookieOptions();
         CookieOptions RemoveAccessTokenCookieOptions();
         ClaimsPrincipal GetPrincipalsFromToken(string token);
+        string GenerateResetPasswordToken(string userEmail);
+        object ExtractEmailFromResetPasswordToken(string token);
     }
 
     public class JwtService : IJwtService
     {
         private readonly JwtSettings _jwtSettings;
+        private readonly ResetPasswordSettings _resetPasswordSettings;
+        private readonly ILogger<RequestLoggingMiddleware> _logger;
 
-        public JwtService(IOptions<JwtSettings> jwtSettings)
+        public JwtService(
+            IOptions<JwtSettings> jwtSettings,
+            IOptions<ResetPasswordSettings> resetPasswordSettings,
+            ILogger<RequestLoggingMiddleware> logger
+            )
         {
             _jwtSettings = jwtSettings.Value;
+            _resetPasswordSettings = resetPasswordSettings.Value;
+            _logger = logger;
         }
 
-        public string GenerateToken(string userEmail)
+        private SigningCredentials GetSigningCredentials(string secretKey)
         {
-            var claims = new[]
-            {
-            new Claim(ClaimTypes.Email, userEmail),
-            new Claim(ClaimTypes.Role, Roles.Admin),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            };
-            var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var expires = DateTime.Now.AddMinutes(_jwtSettings.TokenLifeTime);
+            return new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        }
+
+        private CookieOptions CreateCookieOptions(double tokenLifeTime, bool remove = false)
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = remove ? DateTimeOffset.UtcNow.AddDays(-1) : DateTimeOffset.UtcNow.AddMinutes(tokenLifeTime)
+            };
+
+            return cookieOptions;
+        }
+
+        private string GenerateToken(string userEmail, string issuer, string audience, string secretKey, double tokenLifeTime, bool isAdmin = false)
+        {
+            var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Email, userEmail),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+            if (isAdmin)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, Roles.Admin));
+            }
+
+            var creds = GetSigningCredentials(secretKey);
+            var expires = DateTime.Now.AddMinutes(tokenLifeTime);
 
             var token = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
+                issuer: issuer,
+                audience: audience,
                 claims: claims,
                 expires: expires,
                 signingCredentials: creds
@@ -50,19 +85,15 @@ namespace OnlineStoreAPI.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        public string GenerateAccessToken(string userEmail)
+        {
+            var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
+            return GenerateToken(userEmail, _jwtSettings.Issuer, _jwtSettings.Audience, secretKey, _jwtSettings.TokenLifeTime, true);
+        }
+
         public CookieOptions GetCookieOptions()
         {
-            double tokenLifeTime = TimeSpan.FromMinutes(Convert.ToDouble(_jwtSettings.TokenLifeTime)).TotalMinutes;
-
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Expires = DateTimeOffset.UtcNow.AddMinutes(tokenLifeTime)
-            };
-
-            return cookieOptions;
+            return CreateCookieOptions(_jwtSettings.TokenLifeTime);
         }
 
         public ClaimsPrincipal GetPrincipalsFromToken(string token)
@@ -74,7 +105,7 @@ namespace OnlineStoreAPI.Services
                 var validationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+                    IssuerSigningKey = GetSigningCredentials(secretKey).Key,
                     ValidateIssuer = false,
                     ValidateAudience = false
                 };
@@ -83,9 +114,10 @@ namespace OnlineStoreAPI.Services
 
                 return principal;
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                // If token is invalid or expired actions
+                var errorMessage = $"Access token validation error. Time: {DateTime.Now}. Error message: {exception.Message}";
+                _logger.LogError(errorMessage);
             }
 
             return null;
@@ -93,15 +125,62 @@ namespace OnlineStoreAPI.Services
 
         public CookieOptions RemoveAccessTokenCookieOptions()
         {
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Expires = DateTimeOffset.UtcNow.AddDays(-1)
-            };
+            return CreateCookieOptions(_jwtSettings.TokenLifeTime, true);
+        }
 
-            return cookieOptions;
+        public string GenerateResetPasswordToken(string userEmail)
+        {
+            var resetPasswordSecretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.ResetPasswordSecretKey);
+            return GenerateToken(userEmail, _resetPasswordSettings.Issuer, _resetPasswordSettings.Audience, resetPasswordSecretKey, _resetPasswordSettings.TokenLifeTime);
+        }
+        public object ExtractEmailFromResetPasswordToken(string token)
+        {
+            try
+            {
+                var resetPasswordSecretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.ResetPasswordSecretKey);
+                var key = GetSigningCredentials(resetPasswordSecretKey).Key;
+
+                var tokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = key,
+                    ValidateIssuer = true,
+                    ValidIssuer = _resetPasswordSettings.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = _resetPasswordSettings.Audience,
+                    ValidateLifetime = true
+                };
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+                var jwtSecurityToken = securityToken as JwtSecurityToken;
+
+                if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    throw new SecurityException("Incorrect token");
+                }
+
+                var emailClaim = principal.FindFirst(ClaimTypes.Email);
+                return emailClaim?.Value;
+            }
+            catch (SecurityTokenExpiredException)
+            {
+                var errorMessage = $"Token has expired. Time: {DateTime.Now}.";
+                _logger.LogError(errorMessage);
+                return VerifyResetPasswordToken.TokenHasExpired;
+            }
+            catch (SecurityException exception)
+            {
+                var errorMessage = $"Reset password token validation error. Time: {DateTime.Now}. Error message: {exception.Message}";
+                _logger.LogError(errorMessage);
+                return VerifyResetPasswordToken.TokenValidationError;
+            }
+            catch (Exception exception)
+            {
+                var errorMessage = $"Unexpected error during token validation. Time: {DateTime.Now}. Error message: {exception.Message}";
+                _logger.LogError(errorMessage);
+                return VerifyResetPasswordToken.TokenValidationError;
+            }
         }
     }
 }

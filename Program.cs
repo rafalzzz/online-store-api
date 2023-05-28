@@ -28,6 +28,9 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 builder.Services.Configure<JwtSettings>(jwtSettings);
 
+var resetPasswordSettings = builder.Configuration.GetSection("ResetPasswordSettings");
+builder.Services.Configure<ResetPasswordSettings>(resetPasswordSettings);
+
 builder.Host.UseNLog();
 new CorsConfiguration(builder.Services);
 new AuthenticationConfiguration(jwtSettings, builder.Services);
@@ -38,10 +41,13 @@ builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger);
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddTransient<IJwtService, JwtService>();
+builder.Services.AddTransient<IEmailService, EmailService>();
 
 // Validators
 builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();
 builder.Services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
+builder.Services.AddScoped<IValidator<ResetPasswordRequest>, ResetPasswordRequestValidator>();
+builder.Services.AddScoped<IValidator<ChangePasswordRequest>, ChangePasswordRequestValidator>();
 
 builder.Services.AddControllers();
 

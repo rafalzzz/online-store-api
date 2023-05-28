@@ -55,5 +55,12 @@ namespace OnlineStoreAPI.Extensions
             .Matches("[^a-zA-Z0-9]")
             .WithMessage("Password must contain at least one special character");
         }
+
+        public static void Token<T>(this IRuleBuilder<T, string> ruleBuilder, int minimumLength = 20)
+        {
+            ruleBuilder
+            .MinimumLength(minimumLength)
+            .WithMessage($"Token must contain at least {minimumLength} characters");
+        }
     }
 }

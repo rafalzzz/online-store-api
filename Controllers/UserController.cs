@@ -17,13 +17,24 @@ namespace OnlineStoreAPI.Controllers
         private readonly IUserService _userService;
         private readonly IValidator<RegisterRequest> _registerValidator;
         private readonly IValidator<LoginRequest> _loginValidator;
+        private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
+        private readonly IValidator<ChangePasswordRequest> _changePasswordValidator;
         private readonly IJwtService _jwtService;
 
-        public UserController(IUserService userService, IValidator<RegisterRequest> registerValidator, IValidator<LoginRequest> loginValidator, IJwtService jwtService)
+        public UserController(
+            IUserService userService,
+            IValidator<RegisterRequest> registerValidator,
+            IValidator<LoginRequest> loginValidator,
+            IValidator<ResetPasswordRequest> resetPasswordValidator,
+            IValidator<ChangePasswordRequest> changePasswordValidator,
+            IJwtService jwtService
+            )
         {
             _userService = userService;
             _registerValidator = registerValidator;
             _loginValidator = loginValidator;
+            _resetPasswordValidator = resetPasswordValidator;
+            _changePasswordValidator = changePasswordValidator;
             _jwtService = jwtService;
         }
 
@@ -66,7 +77,7 @@ namespace OnlineStoreAPI.Controllers
         }
 
         [HttpPost("login")]
-        public ActionResult LoginRequest([FromBody] LoginRequest loginUserDto)
+        public ActionResult Login([FromBody] LoginRequest loginUserDto)
         {
             var loginRequestValidation = _loginValidator.Validate(loginUserDto);
             var validationResultErrors = GetValidationErrorsResult(loginRequestValidation);
@@ -85,10 +96,66 @@ namespace OnlineStoreAPI.Controllers
                 case VerifyUserError.WrongPassword:
                     return BadRequest("Incorrect password");
                 default:
-                    string token = _jwtService.GenerateToken((string)userEmail);
+                    string token = _jwtService.GenerateAccessToken((string)userEmail);
                     CookieOptions cookieOptions = _jwtService.GetCookieOptions();
                     Response.Cookies.Append(CookieNames.AccessToken, token, cookieOptions);
                     return Ok();
+            }
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest resetPasswordDto)
+        {
+            var resetPasswordRequestValidation = _resetPasswordValidator.Validate(resetPasswordDto);
+            var validationResultErrors = GetValidationErrorsResult(resetPasswordRequestValidation);
+
+            if (validationResultErrors != null)
+            {
+                return BadRequest(validationResultErrors);
+            }
+
+            bool emailExist = _userService.CheckIfEmailExist(resetPasswordDto.Email);
+
+            if (!emailExist)
+            {
+                return BadRequest("Account with the provided email address doest not exist");
+            }
+
+            await _userService.SendResetPasswordToken(resetPasswordDto.Email);
+
+            return Ok();
+        }
+
+        [HttpPut("change-password/{token}")]
+        public ActionResult ChangePassword([FromBody] ChangePasswordRequest changePasswordDto, [FromRoute] string token)
+        {
+            var changePasswordRequestValidation = _changePasswordValidator.Validate(changePasswordDto);
+            var validationResultErrors = GetValidationErrorsResult(changePasswordRequestValidation);
+
+            if (validationResultErrors != null)
+            {
+                return BadRequest(validationResultErrors);
+            }
+
+            var result = _jwtService.ExtractEmailFromResetPasswordToken(token);
+
+            switch (result)
+            {
+                case VerifyResetPasswordToken expiredToken when expiredToken == VerifyResetPasswordToken.TokenHasExpired:
+                    return Unauthorized("Token has expired");
+
+                case VerifyResetPasswordToken invalidToken when invalidToken == VerifyResetPasswordToken.TokenValidationError:
+                    return Unauthorized("Invalid token");
+
+                default:
+                    var isPasswordChanged = _userService.ChangeUserPassword((string)result, changePasswordDto.Password);
+
+                    if (!isPasswordChanged)
+                    {
+                        return BadRequest("Wrong email");
+                    }
+
+                    return Ok("Password has changed successfully");
             }
         }
 
