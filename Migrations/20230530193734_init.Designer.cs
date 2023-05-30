@@ -11,8 +11,8 @@ using OnlineStoreAPI.Entities;
 namespace OnlineStoreAPI.Migrations
 {
     [DbContext(typeof(OnlineStoreDbContext))]
-    [Migration("20230502220620_Init")]
-    partial class Init
+    [Migration("20230530193734_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -44,6 +44,9 @@ namespace OnlineStoreAPI.Migrations
                     b.Property<string>("Password")
                         .HasColumnType("text");
 
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.ToTable("Users");
@@ -52,10 +55,20 @@ namespace OnlineStoreAPI.Migrations
                         new
                         {
                             Id = 1,
+                            Email = "Admin@test.com",
+                            FirstName = "Admin",
+                            LastName = "Admin",
+                            Password = "1zKLWDaQVNbhFYJ91a5X7A==;CQJNSBvXQGTquHCLALqJsX3a53GHjYlPUxkq76RnAqM=",
+                            Role = 0
+                        },
+                        new
+                        {
+                            Id = 2,
                             Email = "j.kowalski@test.com",
                             FirstName = "Janusz",
                             LastName = "Kowalski",
-                            Password = "Test123!"
+                            Password = "KKYcsB+6LavEmyp5spyX5g==;X7ZHbWADvhuh56Z4gUGie0cfZaD+xK+BxcrRZbIp1l8=",
+                            Role = 1
                         });
                 });
 
@@ -97,14 +110,25 @@ namespace OnlineStoreAPI.Migrations
                     b.HasData(
                         new
                         {
-                            Id = 2,
+                            Id = 3,
+                            Address = "Admin",
+                            AddressName = "Admin",
+                            City = "Admin",
+                            Country = "Admin",
+                            PhoneNumber = "Admin",
+                            PostalCode = "Admin",
+                            UserId = 1
+                        },
+                        new
+                        {
+                            Id = 4,
                             Address = "Test 1/1",
                             AddressName = "main",
                             City = "Warsaw",
                             Country = "Poland",
                             PhoneNumber = "+48 123 456 789",
                             PostalCode = "00-000",
-                            UserId = 1
+                            UserId = 2
                         });
                 });
 

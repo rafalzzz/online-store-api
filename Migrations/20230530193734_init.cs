@@ -3,10 +3,12 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace OnlineStoreAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,7 +22,8 @@ namespace OnlineStoreAPI.Migrations
                     FirstName = table.Column<string>(type: "text", nullable: true),
                     LastName = table.Column<string>(type: "text", nullable: true),
                     Email = table.Column<string>(type: "text", nullable: true),
-                    Password = table.Column<string>(type: "text", nullable: true)
+                    Password = table.Column<string>(type: "text", nullable: true),
+                    Role = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -54,13 +57,21 @@ namespace OnlineStoreAPI.Migrations
 
             migrationBuilder.InsertData(
                 table: "Users",
-                columns: new[] { "Id", "Email", "FirstName", "LastName", "Password" },
-                values: new object[] { 1, "j.kowalski@test.com", "Janusz", "Kowalski", "Test123!" });
+                columns: new[] { "Id", "Email", "FirstName", "LastName", "Password", "Role" },
+                values: new object[,]
+                {
+                    { 1, "Admin@test.com", "Admin", "Admin", "1zKLWDaQVNbhFYJ91a5X7A==;CQJNSBvXQGTquHCLALqJsX3a53GHjYlPUxkq76RnAqM=", 0 },
+                    { 2, "j.kowalski@test.com", "Janusz", "Kowalski", "KKYcsB+6LavEmyp5spyX5g==;X7ZHbWADvhuh56Z4gUGie0cfZaD+xK+BxcrRZbIp1l8=", 1 }
+                });
 
             migrationBuilder.InsertData(
                 table: "UserAddresses",
                 columns: new[] { "Id", "Address", "AddressName", "City", "Country", "PhoneNumber", "PostalCode", "UserId" },
-                values: new object[] { 2, "Test 1/1", "main", "Warsaw", "Poland", "+48 123 456 789", "00-000", 1 });
+                values: new object[,]
+                {
+                    { 3, "Admin", "Admin", "Admin", "Admin", "Admin", "Admin", 1 },
+                    { 4, "Test 1/1", "main", "Warsaw", "Poland", "+48 123 456 789", "00-000", 2 }
+                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserAddresses_UserId",

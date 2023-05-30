@@ -6,6 +6,7 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OnlineStoreAPI.Enums;
+using OnlineStoreAPI.Helpers;
 using OnlineStoreAPI.Middleware;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Variables;
@@ -14,7 +15,7 @@ namespace OnlineStoreAPI.Services
 {
     public interface IJwtService
     {
-        string GenerateAccessToken(string userEmail);
+        string GenerateAccessToken(string userEmail, bool isAdmin);
         CookieOptions GetCookieOptions();
         CookieOptions RemoveAccessTokenCookieOptions();
         ClaimsPrincipal GetPrincipalsFromToken(string token);
@@ -68,7 +69,7 @@ namespace OnlineStoreAPI.Services
 
             if (isAdmin)
             {
-                claims.Add(new Claim(ClaimTypes.Role, Roles.Admin));
+                claims.Add(new Claim(ClaimTypes.Role, UserRole.Admin.ToString()));
             }
 
             var creds = GetSigningCredentials(secretKey);
@@ -85,10 +86,10 @@ namespace OnlineStoreAPI.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public string GenerateAccessToken(string userEmail)
+        public string GenerateAccessToken(string userEmail, bool isAdmin)
         {
             var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
-            return GenerateToken(userEmail, _jwtSettings.Issuer, _jwtSettings.Audience, secretKey, _jwtSettings.TokenLifeTime, true);
+            return GenerateToken(userEmail, _jwtSettings.Issuer, _jwtSettings.Audience, secretKey, _jwtSettings.TokenLifeTime, isAdmin);
         }
 
         public CookieOptions GetCookieOptions()

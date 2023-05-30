@@ -87,16 +87,17 @@ namespace OnlineStoreAPI.Controllers
                 return BadRequest(validationResultErrors);
             }
 
-            object userEmail = _userService.VerifyUser(loginUserDto);
+            (VerifyUserError error, VerifiedUser userData, bool isError) user = _userService.VerifyUser(loginUserDto);
 
-            switch (userEmail)
+            switch (user.error)
             {
                 case VerifyUserError.EmailNoExist:
                     return NotFound("Account with the provided email address doest not exist");
                 case VerifyUserError.WrongPassword:
                     return BadRequest("Incorrect password");
                 default:
-                    string token = _jwtService.GenerateAccessToken((string)userEmail);
+                    bool isAdmin = user.userData.Role == UserRole.Admin;
+                    string token = _jwtService.GenerateAccessToken((string)user.userData.Email, isAdmin);
                     CookieOptions cookieOptions = _jwtService.GetCookieOptions();
                     Response.Cookies.Append(CookieNames.AccessToken, token, cookieOptions);
                     return Ok();
@@ -169,17 +170,12 @@ namespace OnlineStoreAPI.Controllers
 
         [HttpGet("user-data")]
         [Authorize(Policy = PolicyNames.AdminOnly)]
-        public ActionResult GetUserData()
+        public ActionResult GetUserData([FromQuery] string email)
         {
-            var emailClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email);
+            var user = _userService.GetUserByEmail(email);
 
-            if (emailClaim == null)
-            {
-                return NotFound();
-            }
-
-            var userEmail = emailClaim.Value;
-            return Ok(emailClaim.Value);
+            if (user is null) return NotFound($"Account with email {email} does not exist");
+            return Ok(user);
         }
     }
 }

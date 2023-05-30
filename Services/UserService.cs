@@ -4,14 +4,17 @@ using OnlineStoreAPI.Requests;
 using AutoMapper;
 using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Variables;
+using OnlineStoreAPI.Helpers;
+using OnlineStoreAPI.Models;
 
 namespace OnlineStoreAPI.Services
 {
     public interface IUserService
     {
+        User GetUserByEmail(string email);
         bool CheckIfEmailExist(string email);
         int? CreateUser(RegisterRequest userDto);
-        object VerifyUser(LoginRequest loginUserDto);
+        (VerifyUserError error, VerifiedUser userData, bool isError) VerifyUser(LoginRequest loginUserDto);
         Task SendResetPasswordToken(string email);
         bool ChangeUserPassword(string email, string password);
     }
@@ -39,7 +42,7 @@ namespace OnlineStoreAPI.Services
             _emailService = emailService;
         }
 
-        private User GetUserByEmail(string email)
+        public User GetUserByEmail(string email)
         {
             var user = _dbContext.Users.FirstOrDefault(user => user.Email == email);
             return user;
@@ -64,6 +67,7 @@ namespace OnlineStoreAPI.Services
                 LastName = registerUserDto.LastName,
                 Email = registerUserDto.Email,
                 Password = passwordHash,
+                Role = UserRole.Admin,
             };
 
             _dbContext.Users.Add(newUser);
@@ -72,13 +76,13 @@ namespace OnlineStoreAPI.Services
             return newUser.Id;
         }
 
-        public object VerifyUser(LoginRequest loginUserDto)
+        public (VerifyUserError error, VerifiedUser userData, bool isError) VerifyUser(LoginRequest loginUserDto)
         {
             var user = GetUserByEmail(loginUserDto.Email);
 
             if (user is null)
             {
-                return VerifyUserError.EmailNoExist;
+                return (VerifyUserError.EmailNoExist, null, true);
             }
 
             var isPasswordCorrect = _passwordHasher.Verify(
@@ -88,10 +92,16 @@ namespace OnlineStoreAPI.Services
 
             if (!isPasswordCorrect)
             {
-                return VerifyUserError.WrongPassword;
+                return (VerifyUserError.WrongPassword, null, true);
             }
 
-            return user.Email;
+            VerifiedUser userData = new VerifiedUser()
+            {
+                Email = user.Email,
+                Role = user.Role
+            };
+
+            return (VerifyUserError.NoError, userData, false);
         }
 
         public async Task SendResetPasswordToken(string email)
