@@ -5,5 +5,6 @@ namespace OnlineStoreAPI.Enums
         NoError = 0,
         EmailNoExist = 1,
         WrongPassword = 2,
+        WrongRole = 3
     }
 }

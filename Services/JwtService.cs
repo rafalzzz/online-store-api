@@ -6,7 +6,6 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OnlineStoreAPI.Enums;
-using OnlineStoreAPI.Helpers;
 using OnlineStoreAPI.Middleware;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Variables;
@@ -15,7 +14,7 @@ namespace OnlineStoreAPI.Services
 {
     public interface IJwtService
     {
-        string GenerateAccessToken(string userEmail, bool isAdmin);
+        string GenerateAccessToken(string userEmail, string userRole);
         CookieOptions GetCookieOptions();
         CookieOptions RemoveAccessTokenCookieOptions();
         ClaimsPrincipal GetPrincipalsFromToken(string token);
@@ -59,7 +58,7 @@ namespace OnlineStoreAPI.Services
             return cookieOptions;
         }
 
-        private string GenerateToken(string userEmail, string issuer, string audience, string secretKey, double tokenLifeTime, bool isAdmin = false)
+        private string GenerateToken(string userEmail, string issuer, string audience, string secretKey, double tokenLifeTime, string userRole = "")
         {
             var claims = new List<Claim>
         {
@@ -67,9 +66,9 @@ namespace OnlineStoreAPI.Services
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
-            if (isAdmin)
+            if (userRole != "")
             {
-                claims.Add(new Claim(ClaimTypes.Role, UserRole.Admin.ToString()));
+                claims.Add(new Claim(ClaimTypes.Role, userRole));
             }
 
             var creds = GetSigningCredentials(secretKey);
@@ -86,10 +85,10 @@ namespace OnlineStoreAPI.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public string GenerateAccessToken(string userEmail, bool isAdmin)
+        public string GenerateAccessToken(string userEmail, string userRole)
         {
             var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
-            return GenerateToken(userEmail, _jwtSettings.Issuer, _jwtSettings.Audience, secretKey, _jwtSettings.TokenLifeTime, isAdmin);
+            return GenerateToken(userEmail, _jwtSettings.Issuer, _jwtSettings.Audience, secretKey, _jwtSettings.TokenLifeTime, userRole);
         }
 
         public CookieOptions GetCookieOptions()

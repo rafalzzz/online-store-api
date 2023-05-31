@@ -6,6 +6,7 @@ using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Variables;
 using OnlineStoreAPI.Helpers;
 using OnlineStoreAPI.Models;
+using OnlineStoreAPI.Middleware;
 
 namespace OnlineStoreAPI.Services
 {
@@ -26,13 +27,15 @@ namespace OnlineStoreAPI.Services
         private readonly IPasswordHasher _passwordHasher;
         private readonly IJwtService _jwtService;
         private readonly IEmailService _emailService;
+        private readonly ILogger<RequestLoggingMiddleware> _logger;
 
         public UserService(
             OnlineStoreDbContext dbContext,
             IMapper mapper,
             IPasswordHasher passwordHasher,
             IJwtService jwtService,
-            IEmailService emailService
+            IEmailService emailService,
+            ILogger<RequestLoggingMiddleware> logger
             )
         {
             _dbContext = dbContext;
@@ -40,6 +43,7 @@ namespace OnlineStoreAPI.Services
             _passwordHasher = passwordHasher;
             _jwtService = jwtService;
             _emailService = emailService;
+            _logger = logger;
         }
 
         public User GetUserByEmail(string email)
@@ -67,13 +71,24 @@ namespace OnlineStoreAPI.Services
                 LastName = registerUserDto.LastName,
                 Email = registerUserDto.Email,
                 Password = passwordHash,
-                Role = UserRole.Admin,
+                Role = UserRole.User,
             };
 
             _dbContext.Users.Add(newUser);
             _dbContext.SaveChanges();
 
             return newUser.Id;
+        }
+
+        private string GetUserRoleDescription(int value)
+        {
+            if (!Enum.IsDefined(typeof(UserRole), value))
+            {
+                throw new ArgumentException("Provided value does not correspond to a UserRole");
+            }
+
+            UserRole role = (UserRole)value;
+            return role.GetDescription();
         }
 
         public (VerifyUserError error, VerifiedUser userData, bool isError) VerifyUser(LoginRequest loginUserDto)
@@ -95,13 +110,23 @@ namespace OnlineStoreAPI.Services
                 return (VerifyUserError.WrongPassword, null, true);
             }
 
-            VerifiedUser userData = new VerifiedUser()
+            try
             {
-                Email = user.Email,
-                Role = user.Role
-            };
+                string userRole = GetUserRoleDescription((int)user.Role);
 
-            return (VerifyUserError.NoError, userData, false);
+                VerifiedUser userData = new VerifiedUser()
+                {
+                    Email = user.Email,
+                    Role = userRole
+                };
+
+                return (VerifyUserError.NoError, userData, false);
+            }
+            catch (ArgumentException exception)
+            {
+                _logger.LogError(exception.Message);
+                return (VerifyUserError.WrongRole, null, true);
+            }
         }
 
         public async Task SendResetPasswordToken(string email)

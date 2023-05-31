@@ -1,4 +1,5 @@
 using FluentValidation;
+using OnlineStoreAPI.Enums;
 
 namespace OnlineStoreAPI.Extensions
 {
@@ -61,6 +62,13 @@ namespace OnlineStoreAPI.Extensions
             ruleBuilder
             .MinimumLength(minimumLength)
             .WithMessage($"Token must contain at least {minimumLength} characters");
+        }
+
+        public static void Role<T>(this IRuleBuilder<T, UserRole> ruleBuilder)
+        {
+            ruleBuilder
+            .IsInEnum()
+            .WithMessage("Role does not match allowed values");
         }
     }
 }

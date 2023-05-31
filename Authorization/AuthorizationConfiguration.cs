@@ -12,7 +12,7 @@ namespace OnlineStoreAPI.Authorization
         {
             services.AddAuthorization(options =>
             {
-                options.AddPolicy(PolicyNames.AdminOnly, policy => policy.RequireClaim(ClaimTypes.Role, UserRole.Admin.ToString()));
+                options.AddPolicy(PolicyNames.AdminOnly, policy => policy.RequireClaim(ClaimTypes.Role, UserRole.Admin.GetDescription()));
             });
         }
     }
