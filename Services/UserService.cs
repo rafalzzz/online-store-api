@@ -1,6 +1,7 @@
 
 using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Requests;
+using OnlineStoreAPI.Responses;
 using AutoMapper;
 using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Variables;
@@ -12,12 +13,13 @@ namespace OnlineStoreAPI.Services
 {
     public interface IUserService
     {
-        User GetUserByEmail(string email);
         bool CheckIfEmailExist(string email);
         int? CreateUser(RegisterRequest userDto);
         (VerifyUserError error, VerifiedUser userData, bool isError) VerifyUser(LoginRequest loginUserDto);
         Task SendResetPasswordToken(string email);
         bool ChangeUserPassword(string email, string password);
+        UpdateUserDto? GetUserData(string email);
+        UpdateUserDto? UpdateUser(UpdateUserRequest updateUserDto);
     }
 
     public class UserService : IUserService
@@ -49,6 +51,12 @@ namespace OnlineStoreAPI.Services
         public User GetUserByEmail(string email)
         {
             var user = _dbContext.Users.FirstOrDefault(user => user.Email == email);
+            return user;
+        }
+
+        private User GetUserById(int id)
+        {
+            var user = _dbContext.Users.FirstOrDefault(user => user.Id == id);
             return user;
         }
 
@@ -153,6 +161,35 @@ namespace OnlineStoreAPI.Services
             _dbContext.SaveChanges();
 
             return true;
+        }
+
+        public UpdateUserDto? GetUserData(string email)
+        {
+            var user = GetUserByEmail(email);
+
+            if (user is null) return null;
+
+            UpdateUserDto userDto = _mapper.Map<UpdateUserDto>(user);
+
+            return userDto;
+        }
+
+        public UpdateUserDto? UpdateUser(UpdateUserRequest updateUserDto)
+        {
+            var user = GetUserById(updateUserDto.Id);
+
+            if (user is null) return null;
+
+            user.FirstName = updateUserDto.FirstName;
+            user.LastName = updateUserDto.LastName;
+            user.Email = updateUserDto.Email;
+            user.Role = updateUserDto.Role;
+
+            _dbContext.SaveChanges();
+
+            UpdateUserDto userDto = _mapper.Map<UpdateUserDto>(user);
+
+            return userDto;
         }
     }
 }

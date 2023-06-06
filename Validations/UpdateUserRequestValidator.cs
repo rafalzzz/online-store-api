@@ -8,6 +8,10 @@ namespace OnlineStoreAPI.Validations
     {
         public UpdateUserRequestValidator()
         {
+            RuleFor(requestBody => requestBody.Id)
+            .Cascade(CascadeMode.Stop)
+            .Id();
+
             RuleFor(requestBody => requestBody.FirstName)
             .Cascade(CascadeMode.Stop)
             .FirstName();
@@ -20,14 +24,9 @@ namespace OnlineStoreAPI.Validations
             .Cascade(CascadeMode.Stop)
             .Email();
 
-            RuleFor(requestBody => requestBody.Password)
-            .Cascade(CascadeMode.Stop)
-            .Password();
-
             RuleFor(requestBody => requestBody.Role)
             .Cascade(CascadeMode.Stop)
             .Role();
-
         }
     }
 }

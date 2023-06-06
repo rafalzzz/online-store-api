@@ -1,8 +1,8 @@
 using OnlineStoreAPI.Enums;
 
-namespace OnlineStoreAPI.Requests
+namespace OnlineStoreAPI.Responses
 {
-    public class UpdateUserRequest
+    public class UpdateUserDto
     {
         public int Id { get; set; }
         public string FirstName { get; set; } = null!;

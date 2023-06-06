@@ -176,7 +176,7 @@ namespace OnlineStoreAPI.Controllers
         [Authorize(Policy = PolicyNames.AdminOnly)]
         public ActionResult GetUserData([FromQuery] string email)
         {
-            var user = _userService.GetUserByEmail(email);
+            var user = _userService.GetUserData(email);
 
             if (user is null) return NotFound($"Account with email {email} does not exist");
             return Ok(user);
@@ -189,14 +189,15 @@ namespace OnlineStoreAPI.Controllers
             var updateUserRequestValidation = _updateUserValidator.Validate(updateUserDto);
             var validationResultErrors = GetValidationErrorsResult(updateUserRequestValidation);
 
-            // Add validation for ID and finish endpoint
-
             if (validationResultErrors != null)
             {
                 return BadRequest(validationResultErrors);
             }
 
-            return Ok();
+            var updatedUser = _userService.UpdateUser(updateUserDto);
+
+            if (updatedUser is null) return NotFound($"User with id {updateUserDto.Id} does not exist");
+            return Ok(updatedUser);
         }
     }
 }

@@ -70,5 +70,14 @@ namespace OnlineStoreAPI.Extensions
             .IsInEnum()
             .WithMessage("Role does not match allowed values");
         }
+
+        public static void Id<T>(this IRuleBuilder<T, int> ruleBuilder)
+        {
+            ruleBuilder
+            .NotEmpty()
+            .WithMessage("ID is required")
+            .Must(id => id > 0)
+            .WithMessage("ID must be a positive number");
+        }
     }
 }
