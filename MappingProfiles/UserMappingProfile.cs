@@ -1,4 +1,6 @@
 using AutoMapper;
+using OnlineStoreAPI.Entities;
+using OnlineStoreAPI.Responses;
 
 namespace OnlineStoreAPI.MappingProfiles
 {
@@ -6,6 +8,7 @@ namespace OnlineStoreAPI.MappingProfiles
     {
         public UserMappingProfile()
         {
+            CreateMap<User, UpdateUserDto>();
         }
     }
 }

@@ -1,9 +1,13 @@
 
 using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Requests;
+using OnlineStoreAPI.Responses;
 using AutoMapper;
 using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Variables;
+using OnlineStoreAPI.Helpers;
+using OnlineStoreAPI.Models;
+using OnlineStoreAPI.Middleware;
 
 namespace OnlineStoreAPI.Services
 {
@@ -11,9 +15,11 @@ namespace OnlineStoreAPI.Services
     {
         bool CheckIfEmailExist(string email);
         int? CreateUser(RegisterRequest userDto);
-        object VerifyUser(LoginRequest loginUserDto);
+        (VerifyUserError error, VerifiedUser userData, bool isError) VerifyUser(LoginRequest loginUserDto);
         Task SendResetPasswordToken(string email);
         bool ChangeUserPassword(string email, string password);
+        UpdateUserDto? GetUserData(string email);
+        UpdateUserDto? UpdateUser(UpdateUserRequest updateUserDto);
     }
 
     public class UserService : IUserService
@@ -23,13 +29,15 @@ namespace OnlineStoreAPI.Services
         private readonly IPasswordHasher _passwordHasher;
         private readonly IJwtService _jwtService;
         private readonly IEmailService _emailService;
+        private readonly ILogger<RequestLoggingMiddleware> _logger;
 
         public UserService(
             OnlineStoreDbContext dbContext,
             IMapper mapper,
             IPasswordHasher passwordHasher,
             IJwtService jwtService,
-            IEmailService emailService
+            IEmailService emailService,
+            ILogger<RequestLoggingMiddleware> logger
             )
         {
             _dbContext = dbContext;
@@ -37,11 +45,18 @@ namespace OnlineStoreAPI.Services
             _passwordHasher = passwordHasher;
             _jwtService = jwtService;
             _emailService = emailService;
+            _logger = logger;
         }
 
-        private User GetUserByEmail(string email)
+        public User GetUserByEmail(string email)
         {
             var user = _dbContext.Users.FirstOrDefault(user => user.Email == email);
+            return user;
+        }
+
+        private User GetUserById(int id)
+        {
+            var user = _dbContext.Users.FirstOrDefault(user => user.Id == id);
             return user;
         }
 
@@ -64,6 +79,7 @@ namespace OnlineStoreAPI.Services
                 LastName = registerUserDto.LastName,
                 Email = registerUserDto.Email,
                 Password = passwordHash,
+                Role = UserRole.User,
             };
 
             _dbContext.Users.Add(newUser);
@@ -72,13 +88,24 @@ namespace OnlineStoreAPI.Services
             return newUser.Id;
         }
 
-        public object VerifyUser(LoginRequest loginUserDto)
+        private string GetUserRoleDescription(int value)
+        {
+            if (!Enum.IsDefined(typeof(UserRole), value))
+            {
+                throw new ArgumentException("Provided value does not correspond to a UserRole");
+            }
+
+            UserRole role = (UserRole)value;
+            return role.GetDescription();
+        }
+
+        public (VerifyUserError error, VerifiedUser userData, bool isError) VerifyUser(LoginRequest loginUserDto)
         {
             var user = GetUserByEmail(loginUserDto.Email);
 
             if (user is null)
             {
-                return VerifyUserError.EmailNoExist;
+                return (VerifyUserError.EmailNoExist, null, true);
             }
 
             var isPasswordCorrect = _passwordHasher.Verify(
@@ -88,10 +115,26 @@ namespace OnlineStoreAPI.Services
 
             if (!isPasswordCorrect)
             {
-                return VerifyUserError.WrongPassword;
+                return (VerifyUserError.WrongPassword, null, true);
             }
 
-            return user.Email;
+            try
+            {
+                string userRole = GetUserRoleDescription((int)user.Role);
+
+                VerifiedUser userData = new VerifiedUser()
+                {
+                    Email = user.Email,
+                    Role = userRole
+                };
+
+                return (VerifyUserError.NoError, userData, false);
+            }
+            catch (ArgumentException exception)
+            {
+                _logger.LogError(exception.Message);
+                return (VerifyUserError.WrongRole, null, true);
+            }
         }
 
         public async Task SendResetPasswordToken(string email)
@@ -118,6 +161,35 @@ namespace OnlineStoreAPI.Services
             _dbContext.SaveChanges();
 
             return true;
+        }
+
+        public UpdateUserDto? GetUserData(string email)
+        {
+            var user = GetUserByEmail(email);
+
+            if (user is null) return null;
+
+            UpdateUserDto userDto = _mapper.Map<UpdateUserDto>(user);
+
+            return userDto;
+        }
+
+        public UpdateUserDto? UpdateUser(UpdateUserRequest updateUserDto)
+        {
+            var user = GetUserById(updateUserDto.Id);
+
+            if (user is null) return null;
+
+            user.FirstName = updateUserDto.FirstName;
+            user.LastName = updateUserDto.LastName;
+            user.Email = updateUserDto.Email;
+            user.Role = updateUserDto.Role;
+
+            _dbContext.SaveChanges();
+
+            UpdateUserDto userDto = _mapper.Map<UpdateUserDto>(user);
+
+            return userDto;
         }
     }
 }

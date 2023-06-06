@@ -1,5 +1,7 @@
 
 using System.Security.Claims;
+using OnlineStoreAPI.Enums;
+using OnlineStoreAPI.Helpers;
 using OnlineStoreAPI.Variables;
 
 namespace OnlineStoreAPI.Authorization
@@ -10,7 +12,7 @@ namespace OnlineStoreAPI.Authorization
         {
             services.AddAuthorization(options =>
             {
-                options.AddPolicy(PolicyNames.AdminOnly, policy => policy.RequireClaim(ClaimTypes.Role, Roles.Admin));
+                options.AddPolicy(PolicyNames.AdminOnly, policy => policy.RequireClaim(ClaimTypes.Role, UserRole.Admin.GetDescription()));
             });
         }
     }

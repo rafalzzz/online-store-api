@@ -1,14 +1,17 @@
 using OnlineStoreAPI.Entities;
 using Microsoft.EntityFrameworkCore;
+using OnlineStoreAPI.Enums;
 
 namespace OnlineStoreAPI.Services
 {
     public class UserSeeder
     {
         private readonly ModelBuilder _modelBuilder;
+        private readonly IPasswordHasher _passwordHasher;
         public UserSeeder(ModelBuilder modelBuilder)
         {
             this._modelBuilder = modelBuilder;
+            _passwordHasher = new PasswordHasher();
         }
 
         private IEnumerable<User> GetUsers()
@@ -18,11 +21,22 @@ namespace OnlineStoreAPI.Services
                 new User()
                 {
                     Id = 1,
+                    FirstName = "Admin",
+                    LastName = "Admin",
+                    Email = "admin@test.com",
+                    Password = _passwordHasher.Hash("Admin123!"),
+                    Role = UserRole.Admin
+                },
+                new User()
+                {
+                    Id = 2,
                     FirstName = "Janusz",
                     LastName = "Kowalski",
                     Email = "j.kowalski@test.com",
-                    Password = "Test123!",
-                },
+                    Password = _passwordHasher.Hash("Test123!"),
+                    Role = UserRole.User
+                }
+
             };
 
             return users;
@@ -34,14 +48,25 @@ namespace OnlineStoreAPI.Services
             {
                 new UserAddress()
                 {
-                    Id = 2,
+                    Id = 3,
+                    AddressName = "Admin",
+                    Country = "Admin",
+                    City = "Admin",
+                    Address = "Admin",
+                    PostalCode = "Admin",
+                    PhoneNumber = "Admin",
+                    UserId = 1,
+                },
+                new UserAddress()
+                {
+                    Id = 4,
                     AddressName = "main",
                     Country = "Poland",
                     City = "Warsaw",
                     Address = "Test 1/1",
                     PostalCode = "00-000",
                     PhoneNumber = "+48 123 456 789",
-                    UserId = 1,
+                    UserId = 2,
                 },
             };
 

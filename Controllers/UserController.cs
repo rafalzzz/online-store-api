@@ -19,6 +19,7 @@ namespace OnlineStoreAPI.Controllers
         private readonly IValidator<LoginRequest> _loginValidator;
         private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
         private readonly IValidator<ChangePasswordRequest> _changePasswordValidator;
+        private readonly IValidator<UpdateUserRequest> _updateUserValidator;
         private readonly IJwtService _jwtService;
 
         public UserController(
@@ -27,6 +28,7 @@ namespace OnlineStoreAPI.Controllers
             IValidator<LoginRequest> loginValidator,
             IValidator<ResetPasswordRequest> resetPasswordValidator,
             IValidator<ChangePasswordRequest> changePasswordValidator,
+            IValidator<UpdateUserRequest> updateUserValidator,
             IJwtService jwtService
             )
         {
@@ -35,6 +37,7 @@ namespace OnlineStoreAPI.Controllers
             _loginValidator = loginValidator;
             _resetPasswordValidator = resetPasswordValidator;
             _changePasswordValidator = changePasswordValidator;
+            _updateUserValidator = updateUserValidator;
             _jwtService = jwtService;
         }
 
@@ -87,16 +90,18 @@ namespace OnlineStoreAPI.Controllers
                 return BadRequest(validationResultErrors);
             }
 
-            object userEmail = _userService.VerifyUser(loginUserDto);
+            (VerifyUserError error, VerifiedUser userData, bool isError) user = _userService.VerifyUser(loginUserDto);
 
-            switch (userEmail)
+            switch (user.error)
             {
                 case VerifyUserError.EmailNoExist:
                     return NotFound("Account with the provided email address doest not exist");
                 case VerifyUserError.WrongPassword:
                     return BadRequest("Incorrect password");
+                case VerifyUserError.WrongRole:
+                    return StatusCode(500, "User role error");
                 default:
-                    string token = _jwtService.GenerateAccessToken((string)userEmail);
+                    string token = _jwtService.GenerateAccessToken((string)user.userData.Email, user.userData.Role);
                     CookieOptions cookieOptions = _jwtService.GetCookieOptions();
                     Response.Cookies.Append(CookieNames.AccessToken, token, cookieOptions);
                     return Ok();
@@ -169,17 +174,30 @@ namespace OnlineStoreAPI.Controllers
 
         [HttpGet("user-data")]
         [Authorize(Policy = PolicyNames.AdminOnly)]
-        public ActionResult GetUserData()
+        public ActionResult GetUserData([FromQuery] string email)
         {
-            var emailClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email);
+            var user = _userService.GetUserData(email);
 
-            if (emailClaim == null)
+            if (user is null) return NotFound($"Account with email {email} does not exist");
+            return Ok(user);
+        }
+
+        [HttpPut("user-data")]
+        [Authorize(Policy = PolicyNames.AdminOnly)]
+        public ActionResult UpdateUserData([FromBody] UpdateUserRequest updateUserDto)
+        {
+            var updateUserRequestValidation = _updateUserValidator.Validate(updateUserDto);
+            var validationResultErrors = GetValidationErrorsResult(updateUserRequestValidation);
+
+            if (validationResultErrors != null)
             {
-                return NotFound();
+                return BadRequest(validationResultErrors);
             }
 
-            var userEmail = emailClaim.Value;
-            return Ok(emailClaim.Value);
+            var updatedUser = _userService.UpdateUser(updateUserDto);
+
+            if (updatedUser is null) return NotFound($"User with id {updateUserDto.Id} does not exist");
+            return Ok(updatedUser);
         }
     }
 }
