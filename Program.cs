@@ -24,6 +24,10 @@ builder.Services.AddDbContext<OnlineStoreDbContext>(options => options.UseNpgsql
 // AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
+// Memory cache
+// Only for testing purposes
+builder.Services.AddDistributedMemoryCache();
+
 // Configuration
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 builder.Services.Configure<JwtSettings>(jwtSettings);
@@ -33,7 +37,8 @@ builder.Services.Configure<ResetPasswordSettings>(resetPasswordSettings);
 
 builder.Host.UseNLog();
 new CorsConfiguration(builder.Services);
-new AuthenticationConfiguration(jwtSettings, builder.Services);
+new SessionConfiguration(builder.Services, jwtSettings);
+new AuthenticationConfiguration(builder.Services, jwtSettings);
 new AuthorizationConfiguration(builder.Services);
 builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger);
 
@@ -41,6 +46,8 @@ builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger);
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddTransient<IJwtService, JwtService>();
+builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
+builder.Services.AddTransient<IResetPasswordTokenService, ResetPasswordTokenService>();
 builder.Services.AddTransient<IEmailService, EmailService>();
 
 // Validators
@@ -71,6 +78,7 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<CookieAuthenticationMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseSession();
 
 app.MapControllers();
 

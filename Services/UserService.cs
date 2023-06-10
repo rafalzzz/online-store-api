@@ -16,7 +16,6 @@ namespace OnlineStoreAPI.Services
         bool CheckIfEmailExist(string email);
         int? CreateUser(RegisterRequest userDto);
         (VerifyUserError error, VerifiedUser userData, bool isError) VerifyUser(LoginRequest loginUserDto);
-        Task SendResetPasswordToken(string email);
         bool ChangeUserPassword(string email, string password);
         UpdateUserDto? GetUserData(string email);
         UpdateUserDto? UpdateUser(UpdateUserRequest updateUserDto);
@@ -27,7 +26,7 @@ namespace OnlineStoreAPI.Services
         private readonly OnlineStoreDbContext _dbContext;
         private readonly IMapper _mapper;
         private readonly IPasswordHasher _passwordHasher;
-        private readonly IJwtService _jwtService;
+        private readonly IResetPasswordTokenService _resetPasswordTokenService;
         private readonly IEmailService _emailService;
         private readonly ILogger<RequestLoggingMiddleware> _logger;
 
@@ -35,7 +34,7 @@ namespace OnlineStoreAPI.Services
             OnlineStoreDbContext dbContext,
             IMapper mapper,
             IPasswordHasher passwordHasher,
-            IJwtService jwtService,
+            IResetPasswordTokenService resetPasswordTokenService,
             IEmailService emailService,
             ILogger<RequestLoggingMiddleware> logger
             )
@@ -43,7 +42,7 @@ namespace OnlineStoreAPI.Services
             _dbContext = dbContext;
             _mapper = mapper;
             _passwordHasher = passwordHasher;
-            _jwtService = jwtService;
+            _resetPasswordTokenService = resetPasswordTokenService;
             _emailService = emailService;
             _logger = logger;
         }
@@ -124,6 +123,7 @@ namespace OnlineStoreAPI.Services
 
                 VerifiedUser userData = new VerifiedUser()
                 {
+                    Id = user.Id,
                     Email = user.Email,
                     Role = userRole
                 };
@@ -135,19 +135,6 @@ namespace OnlineStoreAPI.Services
                 _logger.LogError(exception.Message);
                 return (VerifyUserError.WrongRole, null, true);
             }
-        }
-
-        public async Task SendResetPasswordToken(string email)
-        {
-            string token = _jwtService.GenerateResetPasswordToken(email);
-
-            string emailTitle = "Confirm your email";
-
-            string clientUrl = Environment.GetEnvironmentVariable(EnvironmentVariables.ClientUrl);
-            string tokenLink = $"{clientUrl}/{token}";
-            string emailMessage = $"Click on the link to confirm your email: {tokenLink}";
-
-            await _emailService.SendEmailAsync(email, emailTitle, emailMessage);
         }
 
         public bool ChangeUserPassword(string email, string password)

@@ -6,19 +6,19 @@ namespace OnlineStoreAPI.Authentication
     public class CookieAuthenticationMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly IJwtService _jwtService;
+        private readonly IAccessTokenService _accessTokenService;
 
-        public CookieAuthenticationMiddleware(RequestDelegate next, IJwtService jwtService)
+        public CookieAuthenticationMiddleware(RequestDelegate next, IAccessTokenService accessTokenService)
         {
             _next = next;
-            _jwtService = jwtService;
+            _accessTokenService = accessTokenService;
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
             if (context.Request.Cookies.TryGetValue(CookieNames.AccessToken, out var accessToken))
             {
-                var principals = _jwtService.GetPrincipalsFromToken(accessToken);
+                var principals = _accessTokenService.GetPrincipalsFromToken(accessToken);
                 context.User = principals;
             }
 

@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Authorization;
@@ -20,7 +19,8 @@ namespace OnlineStoreAPI.Controllers
         private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
         private readonly IValidator<ChangePasswordRequest> _changePasswordValidator;
         private readonly IValidator<UpdateUserRequest> _updateUserValidator;
-        private readonly IJwtService _jwtService;
+        private readonly IAccessTokenService _accessTokenService;
+        private readonly IResetPasswordTokenService _resetPasswordTokenService;
 
         public UserController(
             IUserService userService,
@@ -29,7 +29,8 @@ namespace OnlineStoreAPI.Controllers
             IValidator<ResetPasswordRequest> resetPasswordValidator,
             IValidator<ChangePasswordRequest> changePasswordValidator,
             IValidator<UpdateUserRequest> updateUserValidator,
-            IJwtService jwtService
+            IAccessTokenService accessTokenService,
+            IResetPasswordTokenService resetPasswordTokenService
             )
         {
             _userService = userService;
@@ -38,7 +39,7 @@ namespace OnlineStoreAPI.Controllers
             _resetPasswordValidator = resetPasswordValidator;
             _changePasswordValidator = changePasswordValidator;
             _updateUserValidator = updateUserValidator;
-            _jwtService = jwtService;
+            _resetPasswordTokenService = resetPasswordTokenService;
         }
 
         private IEnumerable<ValidationError> GetValidationErrorsResult(ValidationResult validationResult)
@@ -101,8 +102,8 @@ namespace OnlineStoreAPI.Controllers
                 case VerifyUserError.WrongRole:
                     return StatusCode(500, "User role error");
                 default:
-                    string token = _jwtService.GenerateAccessToken((string)user.userData.Email, user.userData.Role);
-                    CookieOptions cookieOptions = _jwtService.GetCookieOptions();
+                    string token = _accessTokenService.GenerateAccessToken((string)user.userData.Email, user.userData.Role);
+                    CookieOptions cookieOptions = _accessTokenService.GetAccessTokenCookieOptions();
                     Response.Cookies.Append(CookieNames.AccessToken, token, cookieOptions);
                     return Ok();
             }
@@ -126,7 +127,7 @@ namespace OnlineStoreAPI.Controllers
                 return BadRequest("Account with the provided email address doest not exist");
             }
 
-            await _userService.SendResetPasswordToken(resetPasswordDto.Email);
+            await _resetPasswordTokenService.SendResetPasswordToken(resetPasswordDto.Email);
 
             return Ok();
         }
@@ -142,7 +143,7 @@ namespace OnlineStoreAPI.Controllers
                 return BadRequest(validationResultErrors);
             }
 
-            var result = _jwtService.ExtractEmailFromResetPasswordToken(token);
+            var result = _resetPasswordTokenService.ExtractEmailFromResetPasswordToken(token);
 
             switch (result)
             {
@@ -167,7 +168,7 @@ namespace OnlineStoreAPI.Controllers
         [HttpPost("logout")]
         public ActionResult Logout()
         {
-            CookieOptions cookieOptions = _jwtService.RemoveAccessTokenCookieOptions();
+            CookieOptions cookieOptions = _accessTokenService.RemoveAccessTokenCookieOptions();
             Response.Cookies.Append(CookieNames.AccessToken, string.Empty, cookieOptions);
             return Ok();
         }

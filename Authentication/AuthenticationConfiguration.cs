@@ -7,7 +7,7 @@ namespace OnlineStoreAPI.Configuration
 {
     public class AuthenticationConfiguration
     {
-        public AuthenticationConfiguration(IConfigurationSection jwtSettings, IServiceCollection services)
+        public AuthenticationConfiguration(IServiceCollection services, IConfigurationSection jwtSettings)
         {
             var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
             var issuer = jwtSettings["Issuer"];
