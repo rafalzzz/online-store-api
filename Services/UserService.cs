@@ -4,7 +4,6 @@ using OnlineStoreAPI.Requests;
 using OnlineStoreAPI.Responses;
 using AutoMapper;
 using OnlineStoreAPI.Enums;
-using OnlineStoreAPI.Variables;
 using OnlineStoreAPI.Helpers;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Middleware;
@@ -13,6 +12,8 @@ namespace OnlineStoreAPI.Services
 {
     public interface IUserService
     {
+        User GetUserById(int id);
+        string GetUserRoleDescription(UserRole value);
         bool CheckIfEmailExist(string email);
         int? CreateUser(RegisterRequest userDto);
         (VerifyUserError error, VerifiedUser userData, bool isError) VerifyUser(LoginRequest loginUserDto);
@@ -53,7 +54,7 @@ namespace OnlineStoreAPI.Services
             return user;
         }
 
-        private User GetUserById(int id)
+        public User GetUserById(int id)
         {
             var user = _dbContext.Users.FirstOrDefault(user => user.Id == id);
             return user;
@@ -87,7 +88,7 @@ namespace OnlineStoreAPI.Services
             return newUser.Id;
         }
 
-        private string GetUserRoleDescription(int value)
+        public string GetUserRoleDescription(UserRole value)
         {
             if (!Enum.IsDefined(typeof(UserRole), value))
             {
@@ -119,12 +120,11 @@ namespace OnlineStoreAPI.Services
 
             try
             {
-                string userRole = GetUserRoleDescription((int)user.Role);
+                string userRole = GetUserRoleDescription(user.Role);
 
                 VerifiedUser userData = new VerifiedUser()
                 {
-                    Id = user.Id,
-                    Email = user.Email,
+                    Id = user.Id.ToString(),
                     Role = userRole
                 };
 
@@ -157,7 +157,6 @@ namespace OnlineStoreAPI.Services
             if (user is null) return null;
 
             UpdateUserDto userDto = _mapper.Map<UpdateUserDto>(user);
-
             return userDto;
         }
 

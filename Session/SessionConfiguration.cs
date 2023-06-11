@@ -1,4 +1,4 @@
-namespace OnlineStoreAPI.Configuration
+namespace OnlineStoreAPI.Session
 {
     public class SessionConfiguration
     {
@@ -8,7 +8,8 @@ namespace OnlineStoreAPI.Configuration
             {
                 services.AddSession(options =>
                 {
-                    options.IdleTimeout = TimeSpan.FromMinutes(lifetime * 3);
+                    options.IdleTimeout = TimeSpan.FromMinutes(lifetime * 2);
+                    options.Cookie.Name = "Session";
                     options.Cookie.HttpOnly = true;
                     options.Cookie.IsEssential = true;
                 });

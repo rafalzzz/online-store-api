@@ -4,8 +4,7 @@ namespace OnlineStoreAPI.Models
 {
     public class VerifiedUser
     {
-        public int Id { get; set; }
-        public string Email { get; set; } = null!;
+        public string Id { get; set; }
         public string Role { get; set; }
     }
 }

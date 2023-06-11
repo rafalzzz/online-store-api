@@ -39,6 +39,7 @@ namespace OnlineStoreAPI.Controllers
             _resetPasswordValidator = resetPasswordValidator;
             _changePasswordValidator = changePasswordValidator;
             _updateUserValidator = updateUserValidator;
+            _accessTokenService = accessTokenService;
             _resetPasswordTokenService = resetPasswordTokenService;
         }
 
@@ -102,9 +103,13 @@ namespace OnlineStoreAPI.Controllers
                 case VerifyUserError.WrongRole:
                     return StatusCode(500, "User role error");
                 default:
-                    string token = _accessTokenService.GenerateAccessToken((string)user.userData.Email, user.userData.Role);
+                    string token = _accessTokenService.GenerateAccessToken(user.userData.Id, user.userData.Role);
                     CookieOptions cookieOptions = _accessTokenService.GetAccessTokenCookieOptions();
                     Response.Cookies.Append(CookieNames.AccessToken, token, cookieOptions);
+
+                    HttpContext.Session.SetString("UserId", user.userData.Id);
+                    HttpContext.Session.SetString("UserRole", user.userData.Role);
+
                     return Ok();
             }
         }
@@ -168,6 +173,13 @@ namespace OnlineStoreAPI.Controllers
         [HttpPost("logout")]
         public ActionResult Logout()
         {
+            HttpContext.Session.Clear();
+
+            if (HttpContext.Request.Cookies.TryGetValue(".Session", out string sessionCookie))
+            {
+                HttpContext.Response.Cookies.Delete(".Session");
+            }
+
             CookieOptions cookieOptions = _accessTokenService.RemoveAccessTokenCookieOptions();
             Response.Cookies.Append(CookieNames.AccessToken, string.Empty, cookieOptions);
             return Ok();

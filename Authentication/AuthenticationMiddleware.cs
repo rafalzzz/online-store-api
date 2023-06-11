@@ -3,12 +3,12 @@ using OnlineStoreAPI.Variables;
 
 namespace OnlineStoreAPI.Authentication
 {
-    public class CookieAuthenticationMiddleware
+    public class AuthenticationMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly IAccessTokenService _accessTokenService;
 
-        public CookieAuthenticationMiddleware(RequestDelegate next, IAccessTokenService accessTokenService)
+        public AuthenticationMiddleware(RequestDelegate next, IAccessTokenService accessTokenService)
         {
             _next = next;
             _accessTokenService = accessTokenService;

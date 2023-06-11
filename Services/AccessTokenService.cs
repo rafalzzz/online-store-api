@@ -33,11 +33,11 @@ namespace OnlineStoreAPI.Services
             _logger = logger;
         }
 
-        private List<Claim> GetAccessTokenClaims(string userEmail, string userRole)
+        private List<Claim> GetAccessTokenClaims(string userId, string userRole)
         {
             List<Claim> claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Email, userEmail),
+                new Claim(ClaimTypes.NameIdentifier, userId),
                 new Claim(ClaimTypes.Role, userRole),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
@@ -45,9 +45,9 @@ namespace OnlineStoreAPI.Services
             return claims;
         }
 
-        public string GenerateAccessToken(string userEmail, string userRole)
+        public string GenerateAccessToken(string userId, string userRole)
         {
-            List<Claim> claims = GetAccessTokenClaims(userEmail, userRole);
+            List<Claim> claims = GetAccessTokenClaims(userId, userRole);
             string secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
             DateTime expires = DateTime.Now.AddMinutes(_jwtSettings.TokenLifeTime);
 

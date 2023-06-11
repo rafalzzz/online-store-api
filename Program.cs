@@ -3,6 +3,7 @@ using NLog.Web;
 using FluentValidation;
 using OnlineStoreAPI.Authentication;
 using OnlineStoreAPI.Authorization;
+using OnlineStoreAPI.Session;
 using OnlineStoreAPI.Configuration;
 using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Helpers;
@@ -43,8 +44,8 @@ new AuthorizationConfiguration(builder.Services);
 builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger);
 
 // Additional Services
-builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddTransient<IJwtService, JwtService>();
 builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
 builder.Services.AddTransient<IResetPasswordTokenService, ResetPasswordTokenService>();
@@ -72,13 +73,19 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+
 app.UseCors(Cors.CorsPolicy);
 
+app.UseSession();
 app.UseMiddleware<RequestLoggingMiddleware>();
-app.UseMiddleware<CookieAuthenticationMiddleware>();
+app.UseMiddleware<AuthenticationMiddleware>();
+// Przebudować middleware tak, by w przypadku, gdy jest aktywna sesja, a access-token wygasł - tworzyć nowy token JWT
+/* app.UseMiddleware<SessionMiddleware>(); */
+
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseSession();
+
+
 
 app.MapControllers();
 
