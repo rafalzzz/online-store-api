@@ -120,12 +120,10 @@ namespace OnlineStoreAPI.Services
 
             try
             {
-                string userRole = GetUserRoleDescription(user.Role);
-
                 VerifiedUser userData = new VerifiedUser()
                 {
                     Id = user.Id.ToString(),
-                    Role = userRole
+                    Role = GetUserRoleDescription(user.Role)
                 };
 
                 return (VerifyUserError.NoError, userData, false);

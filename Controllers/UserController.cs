@@ -105,6 +105,7 @@ namespace OnlineStoreAPI.Controllers
                 default:
                     string token = _accessTokenService.GenerateAccessToken(user.userData.Id, user.userData.Role);
                     CookieOptions cookieOptions = _accessTokenService.GetAccessTokenCookieOptions();
+                    Response.Cookies.Append(CookieNames.AccessToken, token, cookieOptions);
 
                     HttpContext.Session.SetString("UserId", user.userData.Id);
                     HttpContext.Session.SetString("UserRole", user.userData.Role);
