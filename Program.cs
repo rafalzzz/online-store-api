@@ -78,14 +78,11 @@ app.UseCors(Cors.CorsPolicy);
 
 app.UseSession();
 app.UseMiddleware<RequestLoggingMiddleware>();
+app.UseMiddleware<SessionMiddleware>();
 app.UseMiddleware<AuthenticationMiddleware>();
-// Przebudować middleware tak, by w przypadku, gdy jest aktywna sesja, a access-token wygasł - tworzyć nowy token JWT
-/* app.UseMiddleware<SessionMiddleware>(); */
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-
 
 app.MapControllers();
 

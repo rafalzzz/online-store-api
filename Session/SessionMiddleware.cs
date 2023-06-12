@@ -16,26 +16,22 @@ namespace OnlineStoreAPI.Session
 
         public async Task InvokeAsync(HttpContext context)
         {
-            if (!context.Session.IsAvailable)
-            {
-                return;
-            }
+            bool isSessionActive = context.Session != null && context.Session.IsAvailable;
+            bool accessTokenIsNotAvailable = !context.Request.Cookies.TryGetValue(CookieNames.AccessToken, out var accessToken);
 
-            if (!context.Request.Cookies.TryGetValue(CookieNames.AccessToken, out var accessToken))
+            if (isSessionActive && accessTokenIsNotAvailable)
             {
                 string userId = context.Session.GetString("UserId");
                 string userRole = context.Session.GetString("UserRole");
 
-                if (userId is null || userRole is null)
+                bool isUserIdDefined = int.TryParse(userId, out _);
+                bool isUserRoleDefined = !string.IsNullOrEmpty(userRole);
+
+                if (isUserIdDefined && isUserRoleDefined)
                 {
-                    return;
+                    var newToken = _accessTokenService.GenerateAccessToken(userId, userRole);
+                    context.Response.Cookies.Append(CookieNames.AccessToken, newToken);
                 }
-
-                // Wygeneruj nowy token za pomocą usługi AccessTokenService
-                var newToken = _accessTokenService.GenerateAccessToken(userId, userRole);
-
-                // Utwórz ciasteczko z nowym tokenem
-                context.Response.Cookies.Append(CookieNames.AccessToken, newToken);
             }
 
             await _next(context);

@@ -105,7 +105,6 @@ namespace OnlineStoreAPI.Controllers
                 default:
                     string token = _accessTokenService.GenerateAccessToken(user.userData.Id, user.userData.Role);
                     CookieOptions cookieOptions = _accessTokenService.GetAccessTokenCookieOptions();
-                    Response.Cookies.Append(CookieNames.AccessToken, token, cookieOptions);
 
                     HttpContext.Session.SetString("UserId", user.userData.Id);
                     HttpContext.Session.SetString("UserRole", user.userData.Role);
@@ -174,14 +173,8 @@ namespace OnlineStoreAPI.Controllers
         public ActionResult Logout()
         {
             HttpContext.Session.Clear();
-
-            if (HttpContext.Request.Cookies.TryGetValue(".Session", out string sessionCookie))
-            {
-                HttpContext.Response.Cookies.Delete(".Session");
-            }
-
-            CookieOptions cookieOptions = _accessTokenService.RemoveAccessTokenCookieOptions();
-            Response.Cookies.Append(CookieNames.AccessToken, string.Empty, cookieOptions);
+            HttpContext.Response.Cookies.Delete(CookieNames.Session);
+            HttpContext.Response.Cookies.Delete(CookieNames.AccessToken);
             return Ok();
         }
 
