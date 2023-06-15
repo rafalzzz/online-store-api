@@ -3,7 +3,6 @@ using NLog.Web;
 using FluentValidation;
 using OnlineStoreAPI.Authentication;
 using OnlineStoreAPI.Authorization;
-using OnlineStoreAPI.Session;
 using OnlineStoreAPI.Configuration;
 using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Helpers;
@@ -38,7 +37,6 @@ builder.Services.Configure<ResetPasswordSettings>(resetPasswordSettings);
 
 builder.Host.UseNLog();
 new CorsConfiguration(builder.Services);
-new SessionConfiguration(builder.Services, jwtSettings);
 new AuthenticationConfiguration(builder.Services, jwtSettings);
 new AuthorizationConfiguration(builder.Services);
 builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger);
@@ -48,6 +46,7 @@ builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddTransient<IJwtService, JwtService>();
 builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
+builder.Services.AddTransient<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddTransient<IResetPasswordTokenService, ResetPasswordTokenService>();
 builder.Services.AddTransient<IEmailService, EmailService>();
 
@@ -73,12 +72,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-
 app.UseCors(Cors.CorsPolicy);
 
-app.UseSession();
 app.UseMiddleware<RequestLoggingMiddleware>();
-app.UseMiddleware<SessionMiddleware>();
+app.UseMiddleware<RefreshTokenMiddleware>();
 app.UseMiddleware<AuthenticationMiddleware>();
 
 app.UseAuthentication();

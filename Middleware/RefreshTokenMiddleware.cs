@@ -1,14 +1,14 @@
 using OnlineStoreAPI.Services;
 using OnlineStoreAPI.Variables;
 
-namespace OnlineStoreAPI.Session
+namespace OnlineStoreAPI.Middleware
 {
-    public class SessionMiddleware
+    public class RefreshTokenMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly IAccessTokenService _accessTokenService;
 
-        public SessionMiddleware(RequestDelegate next, IAccessTokenService accessTokenService)
+        public RefreshTokenMiddleware(RequestDelegate next, IAccessTokenService accessTokenService)
         {
             _next = next;
             _accessTokenService = accessTokenService;
@@ -16,10 +16,9 @@ namespace OnlineStoreAPI.Session
 
         public async Task InvokeAsync(HttpContext context)
         {
-            bool isSessionActive = context.Session != null && context.Session.IsAvailable;
             bool accessTokenIsNotAvailable = !context.Request.Cookies.TryGetValue(CookieNames.AccessToken, out var accessToken);
 
-            if (isSessionActive && accessTokenIsNotAvailable)
+            if (accessTokenIsNotAvailable)
             {
                 string userId = context.Session.GetString("UserId");
                 string userRole = context.Session.GetString("UserRole");

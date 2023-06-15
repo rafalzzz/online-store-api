@@ -10,6 +10,7 @@ namespace OnlineStoreAPI.Variables
         public const string ConnectionString = "ONLINE_STORE_CONNECTION_STRING";
         public const string FrontendDomain = "FRONTEND_DOMAIN";
         public const string SecretKey = "SECRET_KEY";
+        public const string RefreshTokenSecretKey = "REFRESH_TOKEN_SECRET_KEY";
         public const string ResetPasswordSecretKey = "RESET_PASSWORD_SECRET_KEY";
         public const string SmtpServer = "SMTP_SERVER";
         public const string SmtpPort = "SMTP_PORT";

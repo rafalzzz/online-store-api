@@ -18,7 +18,7 @@ namespace OnlineStoreAPI.Authentication
         {
             if (context.Request.Cookies.TryGetValue(CookieNames.AccessToken, out var accessToken))
             {
-                var principals = _accessTokenService.GetPrincipalsFromToken(accessToken);
+                var principals = _accessTokenService.GetPrincipalsFromAccessToken(accessToken);
                 context.User = principals;
             }
 

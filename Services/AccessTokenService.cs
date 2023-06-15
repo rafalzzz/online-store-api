@@ -11,13 +11,15 @@ namespace OnlineStoreAPI.Services
     public interface IAccessTokenService
     {
         string GenerateAccessToken(string userEmail, string userRole);
+        ClaimsPrincipal GetPrincipalsFromAccessToken(string token);
         CookieOptions GetAccessTokenCookieOptions();
         CookieOptions RemoveAccessTokenCookieOptions();
-        ClaimsPrincipal GetPrincipalsFromToken(string token);
+
     }
 
     public class AccessTokenService : IAccessTokenService
     {
+        private readonly string _errorMessage = "Access token validation error";
         private readonly JwtSettings _jwtSettings;
         private readonly IJwtService _jwtService;
         private readonly ILogger<RequestLoggingMiddleware> _logger;
@@ -54,54 +56,20 @@ namespace OnlineStoreAPI.Services
             return _jwtService.GenerateToken(claims, _jwtSettings.Issuer, _jwtSettings.Audience, secretKey, expires);
         }
 
-        public ClaimsPrincipal GetPrincipalsFromToken(string token)
+        public ClaimsPrincipal GetPrincipalsFromAccessToken(string token)
         {
-            try
-            {
-                var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var validationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = _jwtService.GetSigningCredentials(secretKey).Key,
-                    ValidateIssuer = false,
-                    ValidateAudience = false
-                };
-
-                var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
-
-                return principal;
-            }
-            catch (Exception exception)
-            {
-                var errorMessage = $"Access token validation error. Time: {DateTime.Now}. Error message: {exception.Message}";
-                _logger.LogError(errorMessage);
-            }
-
-            return null;
-        }
-
-        private CookieOptions CreateCookieOptions(double tokenLifeTime, bool remove = false)
-        {
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Expires = remove ? DateTimeOffset.UtcNow.AddDays(-1) : DateTimeOffset.UtcNow.AddMinutes(tokenLifeTime)
-            };
-
-            return cookieOptions;
+            var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
+            return _jwtService.GetPrincipalsFromToken(token, secretKey, _errorMessage);
         }
 
         public CookieOptions GetAccessTokenCookieOptions()
         {
-            return CreateCookieOptions(_jwtSettings.TokenLifeTime);
+            return _jwtService.CreateCookieOptions(_jwtSettings.TokenLifeTime);
         }
 
         public CookieOptions RemoveAccessTokenCookieOptions()
         {
-            return CreateCookieOptions(_jwtSettings.TokenLifeTime, true);
+            return _jwtService.CreateCookieOptions(_jwtSettings.TokenLifeTime, true);
         }
     }
 }

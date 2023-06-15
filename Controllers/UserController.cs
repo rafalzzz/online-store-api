@@ -20,6 +20,7 @@ namespace OnlineStoreAPI.Controllers
         private readonly IValidator<ChangePasswordRequest> _changePasswordValidator;
         private readonly IValidator<UpdateUserRequest> _updateUserValidator;
         private readonly IAccessTokenService _accessTokenService;
+        private readonly IRefreshTokenService _refreshTokenService;
         private readonly IResetPasswordTokenService _resetPasswordTokenService;
 
         public UserController(
@@ -30,6 +31,7 @@ namespace OnlineStoreAPI.Controllers
             IValidator<ChangePasswordRequest> changePasswordValidator,
             IValidator<UpdateUserRequest> updateUserValidator,
             IAccessTokenService accessTokenService,
+            IRefreshTokenService refreshTokenService,
             IResetPasswordTokenService resetPasswordTokenService
             )
         {
@@ -40,6 +42,7 @@ namespace OnlineStoreAPI.Controllers
             _changePasswordValidator = changePasswordValidator;
             _updateUserValidator = updateUserValidator;
             _accessTokenService = accessTokenService;
+            _refreshTokenService = refreshTokenService;
             _resetPasswordTokenService = resetPasswordTokenService;
         }
 
@@ -104,11 +107,12 @@ namespace OnlineStoreAPI.Controllers
                     return StatusCode(500, "User role error");
                 default:
                     string token = _accessTokenService.GenerateAccessToken(user.userData.Id, user.userData.Role);
-                    CookieOptions cookieOptions = _accessTokenService.GetAccessTokenCookieOptions();
-                    Response.Cookies.Append(CookieNames.AccessToken, token, cookieOptions);
+                    CookieOptions accessTokenCookieOptions = _accessTokenService.GetAccessTokenCookieOptions();
+                    Response.Cookies.Append(CookieNames.AccessToken, token, accessTokenCookieOptions);
 
-                    HttpContext.Session.SetString("UserId", user.userData.Id);
-                    HttpContext.Session.SetString("UserRole", user.userData.Role);
+                    string refreshToken = _refreshTokenService.GenerateRefreshToken(user.userData.Id);
+                    CookieOptions refreshTokenCookieOptions = _refreshTokenService.GetRefreshTokenCookieOptions();
+                    Response.Cookies.Append(CookieNames.RefreshToken, refreshToken, refreshTokenCookieOptions);
 
                     return Ok();
             }
@@ -173,9 +177,6 @@ namespace OnlineStoreAPI.Controllers
         [HttpPost("logout")]
         public ActionResult Logout()
         {
-            HttpContext.Session.Clear();
-            HttpContext.Response.Cookies.Delete(CookieNames.Session);
-            HttpContext.Response.Cookies.Delete(CookieNames.AccessToken);
             return Ok();
         }
 

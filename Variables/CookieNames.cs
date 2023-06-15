@@ -3,6 +3,6 @@ namespace OnlineStoreAPI.Variables
     public class CookieNames
     {
         public const string AccessToken = "access_token";
-        public const string Session = "session";
+        public const string RefreshToken = "refresh_token";
     }
 }
