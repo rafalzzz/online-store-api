@@ -12,7 +12,6 @@ namespace OnlineStoreAPI.Services
         string GenerateRefreshToken(string userEmail);
         int? GetUserIdFromRefreshToken(string refreshToken);
         CookieOptions GetRefreshTokenCookieOptions();
-        CookieOptions RemoveRefreshTokenCookieOptions();
     }
 
     public class RefreshTokenService : IRefreshTokenService
@@ -78,12 +77,6 @@ namespace OnlineStoreAPI.Services
         public CookieOptions GetRefreshTokenCookieOptions()
         {
             DateTimeOffset expires = DateTimeOffset.UtcNow.AddDays(_jwtSettings.RefreshTokenLifeTime);
-            return _jwtService.CreateCookieOptions(expires);
-        }
-
-        public CookieOptions RemoveRefreshTokenCookieOptions()
-        {
-            DateTimeOffset expires = DateTimeOffset.UtcNow.AddDays(-1);
             return _jwtService.CreateCookieOptions(expires);
         }
     }

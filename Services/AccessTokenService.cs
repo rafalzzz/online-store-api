@@ -13,7 +13,6 @@ namespace OnlineStoreAPI.Services
         string GenerateAccessToken(string userEmail, string userRole);
         ClaimsPrincipal GetPrincipalsFromAccessToken(string token);
         CookieOptions GetAccessTokenCookieOptions();
-        CookieOptions RemoveAccessTokenCookieOptions();
 
     }
 
@@ -65,12 +64,6 @@ namespace OnlineStoreAPI.Services
         public CookieOptions GetAccessTokenCookieOptions()
         {
             DateTimeOffset expires = DateTimeOffset.UtcNow.AddMinutes(_jwtSettings.TokenLifeTime);
-            return _jwtService.CreateCookieOptions(expires);
-        }
-
-        public CookieOptions RemoveAccessTokenCookieOptions()
-        {
-            DateTimeOffset expires = DateTimeOffset.UtcNow.AddDays(-1);
             return _jwtService.CreateCookieOptions(expires);
         }
     }
