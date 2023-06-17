@@ -33,14 +33,17 @@ builder.Services.Configure<ResetPasswordSettings>(resetPasswordSettings);
 
 builder.Host.UseNLog();
 new CorsConfiguration(builder.Services);
-new AuthenticationConfiguration(jwtSettings, builder.Services);
+new AuthenticationConfiguration(builder.Services, jwtSettings);
 new AuthorizationConfiguration(builder.Services);
 builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger);
 
 // Additional Services
-builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddTransient<IJwtService, JwtService>();
+builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
+builder.Services.AddTransient<IRefreshTokenService, RefreshTokenService>();
+builder.Services.AddTransient<IResetPasswordTokenService, ResetPasswordTokenService>();
 builder.Services.AddTransient<IEmailService, EmailService>();
 
 // Validators
@@ -68,7 +71,9 @@ if (app.Environment.IsDevelopment())
 app.UseCors(Cors.CorsPolicy);
 
 app.UseMiddleware<RequestLoggingMiddleware>();
-app.UseMiddleware<CookieAuthenticationMiddleware>();
+app.UseMiddleware<RefreshTokenMiddleware>();
+app.UseMiddleware<AuthenticationMiddleware>();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

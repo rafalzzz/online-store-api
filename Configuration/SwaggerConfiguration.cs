@@ -1,5 +1,6 @@
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using OnlineStoreAPI.Variables;
 
 namespace OnlineStoreAPI.Configuration
 {
@@ -13,7 +14,7 @@ namespace OnlineStoreAPI.Configuration
             {
                 Type = SecuritySchemeType.ApiKey,
                 In = ParameterLocation.Cookie,
-                Name = "access_token",
+                Name = CookieNames.AccessToken,
                 Scheme = "Bearer",
                 Description = "JWT Authorization using the Bearer scheme. Enter your token in the text input below.",
                 BearerFormat = "JWT"

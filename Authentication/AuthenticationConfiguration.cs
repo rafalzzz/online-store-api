@@ -7,7 +7,7 @@ namespace OnlineStoreAPI.Configuration
 {
     public class AuthenticationConfiguration
     {
-        public AuthenticationConfiguration(IConfigurationSection jwtSettings, IServiceCollection services)
+        public AuthenticationConfiguration(IServiceCollection services, IConfigurationSection jwtSettings)
         {
             var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
             var issuer = jwtSettings["Issuer"];
@@ -35,9 +35,9 @@ namespace OnlineStoreAPI.Configuration
                 {
                     OnMessageReceived = context =>
                     {
-                        if (context.Request.Cookies.ContainsKey("access_token"))
+                        if (context.Request.Cookies.ContainsKey(CookieNames.AccessToken))
                         {
-                            context.Token = context.Request.Cookies["access_token"];
+                            context.Token = context.Request.Cookies[CookieNames.AccessToken];
                         }
                         return Task.CompletedTask;
                     }

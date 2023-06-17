@@ -25,7 +25,8 @@ namespace OnlineStoreAPI.Services
                     LastName = "Admin",
                     Email = "admin@test.com",
                     Password = _passwordHasher.Hash("Admin123!"),
-                    Role = UserRole.Admin
+                    Role = UserRole.Admin,
+                    RefreshToken = "",
                 },
                 new User()
                 {
@@ -34,7 +35,8 @@ namespace OnlineStoreAPI.Services
                     LastName = "Kowalski",
                     Email = "j.kowalski@test.com",
                     Password = _passwordHasher.Hash("Test123!"),
-                    Role = UserRole.User
+                    Role = UserRole.User,
+                    RefreshToken = "",
                 }
 
             };

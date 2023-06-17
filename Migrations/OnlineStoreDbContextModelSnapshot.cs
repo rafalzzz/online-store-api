@@ -41,6 +41,9 @@ namespace OnlineStoreAPI.Migrations
                     b.Property<string>("Password")
                         .HasColumnType("text");
 
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("text");
+
                     b.Property<int>("Role")
                         .HasColumnType("integer");
 
@@ -52,10 +55,11 @@ namespace OnlineStoreAPI.Migrations
                         new
                         {
                             Id = 1,
-                            Email = "Admin@test.com",
+                            Email = "admin@test.com",
                             FirstName = "Admin",
                             LastName = "Admin",
-                            Password = "1zKLWDaQVNbhFYJ91a5X7A==;CQJNSBvXQGTquHCLALqJsX3a53GHjYlPUxkq76RnAqM=",
+                            Password = "H6/0GU0JMFiRCTZHSZaFoQ==;Jcw4dLF6+S8BsTeJiNPyvtn2hPRZh1j80j05YEqoLL4=",
+                            RefreshToken = "",
                             Role = 0
                         },
                         new
@@ -64,7 +68,8 @@ namespace OnlineStoreAPI.Migrations
                             Email = "j.kowalski@test.com",
                             FirstName = "Janusz",
                             LastName = "Kowalski",
-                            Password = "KKYcsB+6LavEmyp5spyX5g==;X7ZHbWADvhuh56Z4gUGie0cfZaD+xK+BxcrRZbIp1l8=",
+                            Password = "R6fED9583p1EkaAy+M0RQQ==;XUE6M+WwhQRfUA8PsfgrXb5KxJbG9bv2QvWYjvosE2E=",
+                            RefreshToken = "",
                             Role = 1
                         });
                 });

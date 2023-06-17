@@ -1,22 +1,23 @@
-
 using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Requests;
 using OnlineStoreAPI.Responses;
 using AutoMapper;
 using OnlineStoreAPI.Enums;
-using OnlineStoreAPI.Variables;
 using OnlineStoreAPI.Helpers;
-using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Middleware;
 
 namespace OnlineStoreAPI.Services
 {
     public interface IUserService
     {
+        User GetUserById(int id);
+        string GetUserRoleDescription(UserRole value);
         bool CheckIfEmailExist(string email);
         int? CreateUser(RegisterRequest userDto);
-        (VerifyUserError error, VerifiedUser userData, bool isError) VerifyUser(LoginRequest loginUserDto);
-        Task SendResetPasswordToken(string email);
+        (VerifyUserError error, User user, bool isError) VerifyUser(LoginRequest loginUserDto);
+        bool SaveUserRefreshToken(string token, User user);
+        bool CheckUserRefreshToken(User? user, string token);
+        void RemoveUserRefreshToken(string token);
         bool ChangeUserPassword(string email, string password);
         UpdateUserDto? GetUserData(string email);
         UpdateUserDto? UpdateUser(UpdateUserRequest updateUserDto);
@@ -27,7 +28,8 @@ namespace OnlineStoreAPI.Services
         private readonly OnlineStoreDbContext _dbContext;
         private readonly IMapper _mapper;
         private readonly IPasswordHasher _passwordHasher;
-        private readonly IJwtService _jwtService;
+        private readonly IRefreshTokenService _refreshTokenService;
+        private readonly IResetPasswordTokenService _resetPasswordTokenService;
         private readonly IEmailService _emailService;
         private readonly ILogger<RequestLoggingMiddleware> _logger;
 
@@ -35,7 +37,8 @@ namespace OnlineStoreAPI.Services
             OnlineStoreDbContext dbContext,
             IMapper mapper,
             IPasswordHasher passwordHasher,
-            IJwtService jwtService,
+            IRefreshTokenService refreshTokenService,
+            IResetPasswordTokenService resetPasswordTokenService,
             IEmailService emailService,
             ILogger<RequestLoggingMiddleware> logger
             )
@@ -43,7 +46,8 @@ namespace OnlineStoreAPI.Services
             _dbContext = dbContext;
             _mapper = mapper;
             _passwordHasher = passwordHasher;
-            _jwtService = jwtService;
+            _refreshTokenService = refreshTokenService;
+            _resetPasswordTokenService = resetPasswordTokenService;
             _emailService = emailService;
             _logger = logger;
         }
@@ -54,7 +58,7 @@ namespace OnlineStoreAPI.Services
             return user;
         }
 
-        private User GetUserById(int id)
+        public User GetUserById(int id)
         {
             var user = _dbContext.Users.FirstOrDefault(user => user.Id == id);
             return user;
@@ -80,6 +84,7 @@ namespace OnlineStoreAPI.Services
                 Email = registerUserDto.Email,
                 Password = passwordHash,
                 Role = UserRole.User,
+                RefreshToken = "",
             };
 
             _dbContext.Users.Add(newUser);
@@ -88,7 +93,7 @@ namespace OnlineStoreAPI.Services
             return newUser.Id;
         }
 
-        private string GetUserRoleDescription(int value)
+        public string GetUserRoleDescription(UserRole value)
         {
             if (!Enum.IsDefined(typeof(UserRole), value))
             {
@@ -99,7 +104,7 @@ namespace OnlineStoreAPI.Services
             return role.GetDescription();
         }
 
-        public (VerifyUserError error, VerifiedUser userData, bool isError) VerifyUser(LoginRequest loginUserDto)
+        public (VerifyUserError error, User user, bool isError) VerifyUser(LoginRequest loginUserDto)
         {
             var user = GetUserByEmail(loginUserDto.Email);
 
@@ -120,15 +125,8 @@ namespace OnlineStoreAPI.Services
 
             try
             {
-                string userRole = GetUserRoleDescription((int)user.Role);
 
-                VerifiedUser userData = new VerifiedUser()
-                {
-                    Email = user.Email,
-                    Role = userRole
-                };
-
-                return (VerifyUserError.NoError, userData, false);
+                return (VerifyUserError.NoError, user, false);
             }
             catch (ArgumentException exception)
             {
@@ -137,17 +135,34 @@ namespace OnlineStoreAPI.Services
             }
         }
 
-        public async Task SendResetPasswordToken(string email)
+        public bool SaveUserRefreshToken(string? token, User user)
         {
-            string token = _jwtService.GenerateResetPasswordToken(email);
+            user.RefreshToken = token;
+            _dbContext.SaveChanges();
 
-            string emailTitle = "Confirm your email";
+            return true;
+        }
 
-            string clientUrl = Environment.GetEnvironmentVariable(EnvironmentVariables.ClientUrl);
-            string tokenLink = $"{clientUrl}/{token}";
-            string emailMessage = $"Click on the link to confirm your email: {tokenLink}";
+        public bool CheckUserRefreshToken(User? user, string token)
+        {
+            if (user is null)
+            {
+                return false;
+            }
 
-            await _emailService.SendEmailAsync(email, emailTitle, emailMessage);
+            return token == user.RefreshToken;
+        }
+
+        public void RemoveUserRefreshToken(string token)
+        {
+            var userId = _refreshTokenService.GetUserIdFromRefreshToken(token);
+            if (userId is null) return;
+
+            var user = GetUserById((int)userId);
+            if (user is null) return;
+
+            user.RefreshToken = "";
+            _dbContext.SaveChanges();
         }
 
         public bool ChangeUserPassword(string email, string password)
@@ -170,7 +185,6 @@ namespace OnlineStoreAPI.Services
             if (user is null) return null;
 
             UpdateUserDto userDto = _mapper.Map<UpdateUserDto>(user);
-
             return userDto;
         }
 
