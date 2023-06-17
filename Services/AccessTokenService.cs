@@ -64,12 +64,14 @@ namespace OnlineStoreAPI.Services
 
         public CookieOptions GetAccessTokenCookieOptions()
         {
-            return _jwtService.CreateCookieOptions(_jwtSettings.TokenLifeTime);
+            DateTimeOffset expires = DateTimeOffset.UtcNow.AddMinutes(_jwtSettings.TokenLifeTime);
+            return _jwtService.CreateCookieOptions(expires);
         }
 
         public CookieOptions RemoveAccessTokenCookieOptions()
         {
-            return _jwtService.CreateCookieOptions(_jwtSettings.TokenLifeTime, true);
+            DateTimeOffset expires = DateTimeOffset.UtcNow.AddDays(-1);
+            return _jwtService.CreateCookieOptions(expires);
         }
     }
 }

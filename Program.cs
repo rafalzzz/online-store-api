@@ -24,10 +24,6 @@ builder.Services.AddDbContext<OnlineStoreDbContext>(options => options.UseNpgsql
 // AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-// Memory cache
-// Only for testing purposes
-builder.Services.AddDistributedMemoryCache();
-
 // Configuration
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 builder.Services.Configure<JwtSettings>(jwtSettings);

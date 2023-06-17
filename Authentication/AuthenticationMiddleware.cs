@@ -16,7 +16,10 @@ namespace OnlineStoreAPI.Authentication
 
         public async Task InvokeAsync(HttpContext context)
         {
-            if (context.Request.Cookies.TryGetValue(CookieNames.AccessToken, out var accessToken))
+            var accessToken = context.Request.Cookies[CookieNames.AccessToken];
+            bool isAccessTokenDefined = !string.IsNullOrEmpty(accessToken);
+
+            if (isAccessTokenDefined)
             {
                 var principals = _accessTokenService.GetPrincipalsFromAccessToken(accessToken);
                 context.User = principals;

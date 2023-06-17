@@ -10,6 +10,7 @@ namespace OnlineStoreAPI.Entities
         public string Email { get; set; } = null!;
         public string Password { get; set; } = null!;
         public UserRole Role { get; set; }
+        public string RefreshToken { get; set; } = null!;
         public virtual List<UserAddress> UserAddresses { get; set; }
     }
 }

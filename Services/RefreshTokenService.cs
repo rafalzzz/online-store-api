@@ -10,7 +10,7 @@ namespace OnlineStoreAPI.Services
     public interface IRefreshTokenService
     {
         string GenerateRefreshToken(string userEmail);
-        ClaimsPrincipal GetPrincipalsFromRefreshToken(string token);
+        int? GetUserIdFromRefreshToken(string refreshToken);
         CookieOptions GetRefreshTokenCookieOptions();
         CookieOptions RemoveRefreshTokenCookieOptions();
     }
@@ -53,20 +53,38 @@ namespace OnlineStoreAPI.Services
             return _jwtService.GenerateToken(claims, _jwtSettings.Issuer, _jwtSettings.Audience, secretKey, expires);
         }
 
-        public ClaimsPrincipal GetPrincipalsFromRefreshToken(string token)
+        private ClaimsPrincipal GetPrincipalsFromRefreshToken(string token)
         {
             var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.RefreshTokenSecretKey);
             return _jwtService.GetPrincipalsFromToken(token, secretKey, _errorMessage);
         }
 
+        public int? GetUserIdFromRefreshToken(string refreshToken)
+        {
+            var principals = GetPrincipalsFromRefreshToken(refreshToken);
+            Claim userIdClaim = principals.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+
+            int userId;
+            bool isUserId = int.TryParse(userIdClaim.Value, out userId);
+
+            if (!isUserId)
+            {
+                return null;
+            }
+
+            return userId;
+        }
+
         public CookieOptions GetRefreshTokenCookieOptions()
         {
-            return _jwtService.CreateCookieOptions(_jwtSettings.RefreshTokenLifeTime);
+            DateTimeOffset expires = DateTimeOffset.UtcNow.AddDays(_jwtSettings.RefreshTokenLifeTime);
+            return _jwtService.CreateCookieOptions(expires);
         }
 
         public CookieOptions RemoveRefreshTokenCookieOptions()
         {
-            return _jwtService.CreateCookieOptions(_jwtSettings.RefreshTokenLifeTime, true);
+            DateTimeOffset expires = DateTimeOffset.UtcNow.AddDays(-1);
+            return _jwtService.CreateCookieOptions(expires);
         }
     }
 }

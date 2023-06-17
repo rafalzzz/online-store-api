@@ -2,6 +2,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Requests;
@@ -95,9 +96,9 @@ namespace OnlineStoreAPI.Controllers
                 return BadRequest(validationResultErrors);
             }
 
-            (VerifyUserError error, VerifiedUser userData, bool isError) user = _userService.VerifyUser(loginUserDto);
+            (VerifyUserError error, User user, bool isError) verifiedUser = _userService.VerifyUser(loginUserDto);
 
-            switch (user.error)
+            switch (verifiedUser.error)
             {
                 case VerifyUserError.EmailNoExist:
                     return NotFound("Account with the provided email address doest not exist");
@@ -106,11 +107,14 @@ namespace OnlineStoreAPI.Controllers
                 case VerifyUserError.WrongRole:
                     return StatusCode(500, "User role error");
                 default:
-                    string token = _accessTokenService.GenerateAccessToken(user.userData.Id, user.userData.Role);
+                    string userId = verifiedUser.user.Id.ToString();
+                    string role = _userService.GetUserRoleDescription(verifiedUser.user.Role);
+                    string token = _accessTokenService.GenerateAccessToken(userId, role);
                     CookieOptions accessTokenCookieOptions = _accessTokenService.GetAccessTokenCookieOptions();
                     Response.Cookies.Append(CookieNames.AccessToken, token, accessTokenCookieOptions);
 
-                    string refreshToken = _refreshTokenService.GenerateRefreshToken(user.userData.Id);
+                    string refreshToken = _refreshTokenService.GenerateRefreshToken(userId);
+                    _userService.SaveUserRefreshToken(refreshToken, verifiedUser.user);
                     CookieOptions refreshTokenCookieOptions = _refreshTokenService.GetRefreshTokenCookieOptions();
                     Response.Cookies.Append(CookieNames.RefreshToken, refreshToken, refreshTokenCookieOptions);
 
@@ -177,6 +181,15 @@ namespace OnlineStoreAPI.Controllers
         [HttpPost("logout")]
         public ActionResult Logout()
         {
+            var refreshToken = Request.Cookies[CookieNames.RefreshToken];
+
+            if (!string.IsNullOrEmpty(refreshToken))
+            {
+                _userService.RemoveUserRefreshToken(refreshToken);
+            }
+
+            Response.Cookies.Delete(CookieNames.AccessToken);
+            Response.Cookies.Delete(CookieNames.RefreshToken);
             return Ok();
         }
 

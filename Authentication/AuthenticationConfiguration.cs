@@ -35,9 +35,9 @@ namespace OnlineStoreAPI.Configuration
                 {
                     OnMessageReceived = context =>
                     {
-                        if (context.Request.Cookies.ContainsKey("access_token"))
+                        if (context.Request.Cookies.ContainsKey(CookieNames.AccessToken))
                         {
-                            context.Token = context.Request.Cookies["access_token"];
+                            context.Token = context.Request.Cookies[CookieNames.AccessToken];
                         }
                         return Task.CompletedTask;
                     }

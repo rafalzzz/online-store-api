@@ -12,7 +12,7 @@ namespace OnlineStoreAPI.Services
         SigningCredentials GetSigningCredentials(string secretKey);
         string GenerateToken(List<Claim> claims, string issuer, string audience, string secretKey, DateTime expires);
         ClaimsPrincipal GetPrincipalsFromToken(string token, string secretKey, string tokenErrorMessage);
-        CookieOptions CreateCookieOptions(double tokenLifeTime, bool remove = false);
+        CookieOptions CreateCookieOptions(DateTimeOffset tokenLifeTime);
     }
 
     public class JwtService : IJwtService
@@ -72,14 +72,14 @@ namespace OnlineStoreAPI.Services
             return null;
         }
 
-        public CookieOptions CreateCookieOptions(double tokenLifeTime, bool remove = false)
+        public CookieOptions CreateCookieOptions(DateTimeOffset tokenLifeTime)
         {
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
-                Expires = remove ? DateTimeOffset.UtcNow.AddDays(-1) : DateTimeOffset.UtcNow.AddMinutes(tokenLifeTime)
+                Expires = tokenLifeTime
             };
 
             return cookieOptions;

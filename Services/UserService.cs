@@ -1,11 +1,9 @@
-
 using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Requests;
 using OnlineStoreAPI.Responses;
 using AutoMapper;
 using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Helpers;
-using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Middleware;
 
 namespace OnlineStoreAPI.Services
@@ -16,7 +14,10 @@ namespace OnlineStoreAPI.Services
         string GetUserRoleDescription(UserRole value);
         bool CheckIfEmailExist(string email);
         int? CreateUser(RegisterRequest userDto);
-        (VerifyUserError error, VerifiedUser userData, bool isError) VerifyUser(LoginRequest loginUserDto);
+        (VerifyUserError error, User user, bool isError) VerifyUser(LoginRequest loginUserDto);
+        bool SaveUserRefreshToken(string token, User user);
+        bool CheckUserRefreshToken(User? user, string token);
+        void RemoveUserRefreshToken(string token);
         bool ChangeUserPassword(string email, string password);
         UpdateUserDto? GetUserData(string email);
         UpdateUserDto? UpdateUser(UpdateUserRequest updateUserDto);
@@ -27,6 +28,7 @@ namespace OnlineStoreAPI.Services
         private readonly OnlineStoreDbContext _dbContext;
         private readonly IMapper _mapper;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IRefreshTokenService _refreshTokenService;
         private readonly IResetPasswordTokenService _resetPasswordTokenService;
         private readonly IEmailService _emailService;
         private readonly ILogger<RequestLoggingMiddleware> _logger;
@@ -35,6 +37,7 @@ namespace OnlineStoreAPI.Services
             OnlineStoreDbContext dbContext,
             IMapper mapper,
             IPasswordHasher passwordHasher,
+            IRefreshTokenService refreshTokenService,
             IResetPasswordTokenService resetPasswordTokenService,
             IEmailService emailService,
             ILogger<RequestLoggingMiddleware> logger
@@ -43,6 +46,7 @@ namespace OnlineStoreAPI.Services
             _dbContext = dbContext;
             _mapper = mapper;
             _passwordHasher = passwordHasher;
+            _refreshTokenService = refreshTokenService;
             _resetPasswordTokenService = resetPasswordTokenService;
             _emailService = emailService;
             _logger = logger;
@@ -80,6 +84,7 @@ namespace OnlineStoreAPI.Services
                 Email = registerUserDto.Email,
                 Password = passwordHash,
                 Role = UserRole.User,
+                RefreshToken = "",
             };
 
             _dbContext.Users.Add(newUser);
@@ -99,7 +104,7 @@ namespace OnlineStoreAPI.Services
             return role.GetDescription();
         }
 
-        public (VerifyUserError error, VerifiedUser userData, bool isError) VerifyUser(LoginRequest loginUserDto)
+        public (VerifyUserError error, User user, bool isError) VerifyUser(LoginRequest loginUserDto)
         {
             var user = GetUserByEmail(loginUserDto.Email);
 
@@ -120,19 +125,44 @@ namespace OnlineStoreAPI.Services
 
             try
             {
-                VerifiedUser userData = new VerifiedUser()
-                {
-                    Id = user.Id.ToString(),
-                    Role = GetUserRoleDescription(user.Role)
-                };
 
-                return (VerifyUserError.NoError, userData, false);
+                return (VerifyUserError.NoError, user, false);
             }
             catch (ArgumentException exception)
             {
                 _logger.LogError(exception.Message);
                 return (VerifyUserError.WrongRole, null, true);
             }
+        }
+
+        public bool SaveUserRefreshToken(string? token, User user)
+        {
+            user.RefreshToken = token;
+            _dbContext.SaveChanges();
+
+            return true;
+        }
+
+        public bool CheckUserRefreshToken(User? user, string token)
+        {
+            if (user is null)
+            {
+                return false;
+            }
+
+            return token == user.RefreshToken;
+        }
+
+        public void RemoveUserRefreshToken(string token)
+        {
+            var userId = _refreshTokenService.GetUserIdFromRefreshToken(token);
+            if (userId is null) return;
+
+            var user = GetUserById((int)userId);
+            if (user is null) return;
+
+            user.RefreshToken = "";
+            _dbContext.SaveChanges();
         }
 
         public bool ChangeUserPassword(string email, string password)
