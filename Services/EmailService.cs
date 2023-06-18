@@ -1,5 +1,3 @@
-
-
 using MailKit.Net.Smtp;
 using MimeKit;
 using MimeKit.Text;

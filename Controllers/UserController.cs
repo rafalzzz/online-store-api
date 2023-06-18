@@ -1,7 +1,7 @@
-using FluentValidation;
-using FluentValidation.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using FluentValidation;
+using FluentValidation.Results;
 using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Enums;
 using OnlineStoreAPI.Models;
@@ -11,7 +11,7 @@ using OnlineStoreAPI.Variables;
 
 namespace OnlineStoreAPI.Controllers
 {
-    [Route("api/user")]
+    [Route(ControllerRoutes.UserController)]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -85,7 +85,7 @@ namespace OnlineStoreAPI.Controllers
             return Created($"/api/users/{id}", null);
         }
 
-        [HttpPost("login")]
+        [HttpPost(UserControllerEndpoints.Login)]
         public ActionResult Login([FromBody] LoginRequest loginUserDto)
         {
             var loginRequestValidation = _loginValidator.Validate(loginUserDto);
@@ -122,7 +122,7 @@ namespace OnlineStoreAPI.Controllers
             }
         }
 
-        [HttpPost("reset-password")]
+        [HttpPost(UserControllerEndpoints.ResetPassword)]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest resetPasswordDto)
         {
             var resetPasswordRequestValidation = _resetPasswordValidator.Validate(resetPasswordDto);
@@ -145,7 +145,7 @@ namespace OnlineStoreAPI.Controllers
             return Ok();
         }
 
-        [HttpPut("change-password/{token}")]
+        [HttpPut(UserControllerEndpoints.ChangePassword)]
         public ActionResult ChangePassword([FromBody] ChangePasswordRequest changePasswordDto, [FromRoute] string token)
         {
             var changePasswordRequestValidation = _changePasswordValidator.Validate(changePasswordDto);
@@ -156,7 +156,7 @@ namespace OnlineStoreAPI.Controllers
                 return BadRequest(validationResultErrors);
             }
 
-            var result = _resetPasswordTokenService.ExtractEmailFromResetPasswordToken(token);
+            var result = _resetPasswordTokenService.GetEmailFromResetPasswordToken(token);
 
             switch (result)
             {
@@ -178,7 +178,7 @@ namespace OnlineStoreAPI.Controllers
             }
         }
 
-        [HttpPost("logout")]
+        [HttpPost(UserControllerEndpoints.Logout)]
         public ActionResult Logout()
         {
             var refreshToken = Request.Cookies[CookieNames.RefreshToken];
@@ -193,7 +193,7 @@ namespace OnlineStoreAPI.Controllers
             return Ok();
         }
 
-        [HttpGet("user-data")]
+        [HttpGet(UserControllerEndpoints.UserData)]
         [Authorize(Policy = PolicyNames.AdminOnly)]
         public ActionResult GetUserData([FromQuery] string email)
         {
@@ -203,7 +203,7 @@ namespace OnlineStoreAPI.Controllers
             return Ok(user);
         }
 
-        [HttpPut("user-data")]
+        [HttpPut(UserControllerEndpoints.UserData)]
         [Authorize(Policy = PolicyNames.AdminOnly)]
         public ActionResult UpdateUserData([FromBody] UpdateUserRequest updateUserDto)
         {

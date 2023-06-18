@@ -10,8 +10,8 @@ namespace OnlineStoreAPI.Configuration
         public AuthenticationConfiguration(IServiceCollection services, IConfigurationSection jwtSettings)
         {
             var secretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.SecretKey);
-            var issuer = jwtSettings["Issuer"];
-            var audience = jwtSettings["Audience"];
+            var issuer = jwtSettings[JwtSettingsKeys.Issuer];
+            var audience = jwtSettings[JwtSettingsKeys.Audience];
 
             services.AddAuthentication(options =>
             {

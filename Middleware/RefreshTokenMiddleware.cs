@@ -17,10 +17,31 @@ namespace OnlineStoreAPI.Middleware
             _serviceProvider = serviceProvider;
         }
 
-        private void GenerateNewAccessToken(
-            string refreshToken,
-            HttpContext context
-            )
+        private string GetRefreshToken(HttpContext context)
+        {
+            return context.Request.Cookies[CookieNames.RefreshToken];
+        }
+
+        private string GetAccessToken(HttpContext context)
+        {
+            return context.Request.Cookies[CookieNames.AccessToken];
+        }
+
+        private bool ShouldGenerateNewAccessToken(HttpContext context)
+        {
+            var refreshToken = GetRefreshToken(context);
+            var accessToken = GetAccessToken(context);
+            string endpoint = context.Request.Path;
+
+            bool isRefreshTokenDefined = !string.IsNullOrEmpty(refreshToken);
+            bool isAccessTokenNotDefined = string.IsNullOrEmpty(accessToken);
+            bool isNotLoginEndpoint = !endpoint.Contains(UserControllerEndpoints.Login);
+            bool isNotLogoutEndpoint = !endpoint.Contains(UserControllerEndpoints.Logout);
+
+            return isRefreshTokenDefined && isAccessTokenNotDefined && isNotLoginEndpoint && isNotLogoutEndpoint;
+        }
+
+        private void GenerateNewAccessToken(string refreshToken, HttpContext context)
         {
             using var scope = _serviceProvider.CreateScope();
             var accessTokenService = scope.ServiceProvider.GetRequiredService<IAccessTokenService>();
@@ -48,16 +69,9 @@ namespace OnlineStoreAPI.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var refreshToken = context.Request.Cookies[CookieNames.RefreshToken];
-            var accessToken = context.Request.Cookies[CookieNames.AccessToken];
-            string endpoint = context.Request.Path;
-
-            bool isRefreshTokenDefined = !string.IsNullOrEmpty(refreshToken);
-            bool isAccessTokenNotDefined = string.IsNullOrEmpty(accessToken);
-            bool isNotLoginEndpoint = !endpoint.Contains("login");
-
-            if (isRefreshTokenDefined && isAccessTokenNotDefined && isNotLoginEndpoint)
+            if (ShouldGenerateNewAccessToken(context))
             {
+                var refreshToken = GetRefreshToken(context);
                 GenerateNewAccessToken(refreshToken, context);
             }
 
