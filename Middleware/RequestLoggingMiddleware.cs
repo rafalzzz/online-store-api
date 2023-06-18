@@ -21,7 +21,8 @@ namespace OnlineStoreAPI.Middleware
 
             if (sw.Elapsed.TotalSeconds > 10 || context.Response.StatusCode == 401)
             {
-                _logger.LogError($"Request {context.Request?.Method} {context.Request?.Path.Value} took longer than 10 seconds or returned a 401 error. Time elapsed: {sw.Elapsed.TotalSeconds} sec. Response status code: {context.Response.StatusCode}");
+                string errorMessage = $"Request {context.Request?.Method} {context.Request?.Path.Value} took longer than 10 seconds or returned a 401 error. Time elapsed: {sw.Elapsed.TotalSeconds} sec. Response status code: {context.Response.StatusCode}";
+                _logger.LogError(errorMessage);
             }
         }
     }

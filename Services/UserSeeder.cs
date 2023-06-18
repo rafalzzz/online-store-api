@@ -82,7 +82,7 @@ namespace OnlineStoreAPI.Services
             _modelBuilder.Entity<User>().HasData(users);
             #endregion
 
-            #region UserAddressSeeder
+            #region UserAddressesSeeder
             var userAddresses = GetUserAddresses();
             _modelBuilder.Entity<UserAddress>().HasData(userAddresses);
             #endregion

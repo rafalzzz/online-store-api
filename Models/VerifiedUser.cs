@@ -1,5 +1,3 @@
-using OnlineStoreAPI.Enums;
-
 namespace OnlineStoreAPI.Models
 {
     public class VerifiedUser

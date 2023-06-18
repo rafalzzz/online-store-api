@@ -1,4 +1,3 @@
-
 using System.IdentityModel.Tokens.Jwt;
 using System.Security;
 using System.Security.Claims;
@@ -14,7 +13,7 @@ namespace OnlineStoreAPI.Services
     public interface IResetPasswordTokenService
     {
         Task SendResetPasswordToken(string email);
-        object ExtractEmailFromResetPasswordToken(string token);
+        object GetEmailFromResetPasswordToken(string token);
     }
 
     public class ResetPasswordTokenService : IResetPasswordTokenService
@@ -70,53 +69,82 @@ namespace OnlineStoreAPI.Services
             await _emailService.SendEmailAsync(email, emailTitle, emailMessage);
         }
 
-        public object ExtractEmailFromResetPasswordToken(string token)
+        private string GetResetPasswordSecretKey()
+        {
+            return Environment.GetEnvironmentVariable(EnvironmentVariables.ResetPasswordSecretKey);
+        }
+
+        private SecurityKey GetSigningCredentialsKey(string secretKey)
+        {
+            return _jwtService.GetSigningCredentials(secretKey).Key;
+        }
+
+        private TokenValidationParameters CreateTokenValidationParameters(SecurityKey key)
+        {
+            return new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = key,
+                ValidateIssuer = true,
+                ValidIssuer = _resetPasswordSettings.Issuer,
+                ValidateAudience = true,
+                ValidAudience = _resetPasswordSettings.Audience,
+                ValidateLifetime = true
+            };
+        }
+
+        private JwtSecurityToken ValidateJwtToken(string token, TokenValidationParameters tokenValidationParameters)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+            var jwtSecurityToken = securityToken as JwtSecurityToken;
+
+            if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+            {
+                throw new SecurityException("Incorrect token");
+            }
+
+            return jwtSecurityToken;
+        }
+
+        private Claim GetEmailClaim(JwtSecurityToken jwtSecurityToken)
+        {
+            return jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email);
+        }
+
+        private object LogErrorAndReturnTokenStatus(string errorMessage, VerifyResetPasswordToken status)
+        {
+            _logger.LogError(errorMessage);
+            return status;
+        }
+
+        public object GetEmailFromResetPasswordToken(string token)
         {
             try
             {
-                var resetPasswordSecretKey = Environment.GetEnvironmentVariable(EnvironmentVariables.ResetPasswordSecretKey);
-                var key = _jwtService.GetSigningCredentials(resetPasswordSecretKey).Key;
+                var resetPasswordSecretKey = GetResetPasswordSecretKey();
+                var key = GetSigningCredentialsKey(resetPasswordSecretKey);
 
-                var tokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = key,
-                    ValidateIssuer = true,
-                    ValidIssuer = _resetPasswordSettings.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = _resetPasswordSettings.Audience,
-                    ValidateLifetime = true
-                };
+                var tokenValidationParameters = CreateTokenValidationParameters(key);
+                var jwtSecurityToken = ValidateJwtToken(token, tokenValidationParameters);
 
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
-                var jwtSecurityToken = securityToken as JwtSecurityToken;
-
-                if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    throw new SecurityException("Incorrect token");
-                }
-
-                var emailClaim = principal.FindFirst(ClaimTypes.Email);
+                var emailClaim = GetEmailClaim(jwtSecurityToken);
                 return emailClaim?.Value;
             }
             catch (SecurityTokenExpiredException)
             {
-                var errorMessage = $"Token has expired. Time: {DateTime.Now}.";
-                _logger.LogError(errorMessage);
-                return VerifyResetPasswordToken.TokenHasExpired;
+                string errorMessage = $"Token has expired. Time: {DateTime.Now}.";
+                return LogErrorAndReturnTokenStatus(errorMessage, VerifyResetPasswordToken.TokenHasExpired);
             }
             catch (SecurityException exception)
             {
-                var errorMessage = $"Reset password token validation error. Time: {DateTime.Now}. Error message: {exception.Message}";
-                _logger.LogError(errorMessage);
-                return VerifyResetPasswordToken.TokenValidationError;
+                string errorMessage = $"Reset password token validation error. Time: {DateTime.Now}. Error message: {exception.Message}";
+                return LogErrorAndReturnTokenStatus(errorMessage, VerifyResetPasswordToken.TokenValidationError);
             }
             catch (Exception exception)
             {
-                var errorMessage = $"Unexpected error during token validation. Time: {DateTime.Now}. Error message: {exception.Message}";
-                _logger.LogError(errorMessage);
-                return VerifyResetPasswordToken.TokenValidationError;
+                string errorMessage = $"Unexpected error during token validation. Time: {DateTime.Now}. Error message: {exception.Message}";
+                return LogErrorAndReturnTokenStatus(errorMessage, VerifyResetPasswordToken.TokenValidationError);
             }
         }
     }
