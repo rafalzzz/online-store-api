@@ -9,6 +9,7 @@ namespace OnlineStoreAPI.MappingProfiles
         public UserMappingProfile()
         {
             CreateMap<User, UpdateUserDto>();
+            CreateMap<UserAddress, UserAddressDto>();
         }
     }
 }

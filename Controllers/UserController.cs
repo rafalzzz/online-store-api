@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using FluentValidation;
-using FluentValidation.Results;
 using OnlineStoreAPI.Entities;
 using OnlineStoreAPI.Enums;
-using OnlineStoreAPI.Models;
 using OnlineStoreAPI.Requests;
 using OnlineStoreAPI.Services;
 using OnlineStoreAPI.Variables;
@@ -15,60 +13,46 @@ namespace OnlineStoreAPI.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IAccessTokenService _accessTokenService;
+        private readonly IRefreshTokenService _refreshTokenService;
+        private readonly IResetPasswordTokenService _resetPasswordTokenService;
+        private readonly IRequestValidationService _requestValidationService;
         private readonly IValidator<RegisterRequest> _registerValidator;
         private readonly IValidator<LoginRequest> _loginValidator;
         private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
         private readonly IValidator<ChangePasswordRequest> _changePasswordValidator;
         private readonly IValidator<UpdateUserRequest> _updateUserValidator;
-        private readonly IAccessTokenService _accessTokenService;
-        private readonly IRefreshTokenService _refreshTokenService;
-        private readonly IResetPasswordTokenService _resetPasswordTokenService;
 
         public UserController(
             IUserService userService,
             IValidator<RegisterRequest> registerValidator,
+            IAccessTokenService accessTokenService,
+            IRefreshTokenService refreshTokenService,
+            IResetPasswordTokenService resetPasswordTokenService,
+            IRequestValidationService requestValidationService,
             IValidator<LoginRequest> loginValidator,
             IValidator<ResetPasswordRequest> resetPasswordValidator,
             IValidator<ChangePasswordRequest> changePasswordValidator,
-            IValidator<UpdateUserRequest> updateUserValidator,
-            IAccessTokenService accessTokenService,
-            IRefreshTokenService refreshTokenService,
-            IResetPasswordTokenService resetPasswordTokenService
+            IValidator<UpdateUserRequest> updateUserValidator
             )
         {
             _userService = userService;
+            _accessTokenService = accessTokenService;
+            _refreshTokenService = refreshTokenService;
+            _resetPasswordTokenService = resetPasswordTokenService;
+            _requestValidationService = requestValidationService;
             _registerValidator = registerValidator;
             _loginValidator = loginValidator;
             _resetPasswordValidator = resetPasswordValidator;
             _changePasswordValidator = changePasswordValidator;
             _updateUserValidator = updateUserValidator;
-            _accessTokenService = accessTokenService;
-            _refreshTokenService = refreshTokenService;
-            _resetPasswordTokenService = resetPasswordTokenService;
-        }
-
-        private IEnumerable<ValidationError> GetValidationErrorsResult(ValidationResult validationResult)
-        {
-            if (!validationResult.IsValid)
-            {
-                var errorList = validationResult.Errors
-                .Select(error => new ValidationError
-                {
-                    Property = error.PropertyName,
-                    ErrorMessage = error.ErrorMessage
-                });
-
-                return errorList;
-            }
-
-            return null;
         }
 
         [HttpPost]
         public ActionResult Register([FromBody] RegisterRequest registerUserDto)
         {
             var registerRequestValidation = _registerValidator.Validate(registerUserDto);
-            var validationResultErrors = GetValidationErrorsResult(registerRequestValidation);
+            var validationResultErrors = _requestValidationService.GetValidationErrorsResult(registerRequestValidation);
 
             if (validationResultErrors != null)
             {
@@ -82,14 +66,14 @@ namespace OnlineStoreAPI.Controllers
                 return BadRequest("User with the provided email address already exists");
             }
 
-            return Created($"/api/users/{id}", null);
+            return Ok();
         }
 
         [HttpPost(UserControllerEndpoints.Login)]
         public ActionResult Login([FromBody] LoginRequest loginUserDto)
         {
             var loginRequestValidation = _loginValidator.Validate(loginUserDto);
-            var validationResultErrors = GetValidationErrorsResult(loginRequestValidation);
+            var validationResultErrors = _requestValidationService.GetValidationErrorsResult(loginRequestValidation);
 
             if (validationResultErrors != null)
             {
@@ -126,7 +110,7 @@ namespace OnlineStoreAPI.Controllers
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest resetPasswordDto)
         {
             var resetPasswordRequestValidation = _resetPasswordValidator.Validate(resetPasswordDto);
-            var validationResultErrors = GetValidationErrorsResult(resetPasswordRequestValidation);
+            var validationResultErrors = _requestValidationService.GetValidationErrorsResult(resetPasswordRequestValidation);
 
             if (validationResultErrors != null)
             {
@@ -149,7 +133,7 @@ namespace OnlineStoreAPI.Controllers
         public ActionResult ChangePassword([FromBody] ChangePasswordRequest changePasswordDto, [FromRoute] string token)
         {
             var changePasswordRequestValidation = _changePasswordValidator.Validate(changePasswordDto);
-            var validationResultErrors = GetValidationErrorsResult(changePasswordRequestValidation);
+            var validationResultErrors = _requestValidationService.GetValidationErrorsResult(changePasswordRequestValidation);
 
             if (validationResultErrors != null)
             {
@@ -208,7 +192,7 @@ namespace OnlineStoreAPI.Controllers
         public ActionResult UpdateUserData([FromBody] UpdateUserRequest updateUserDto)
         {
             var updateUserRequestValidation = _updateUserValidator.Validate(updateUserDto);
-            var validationResultErrors = GetValidationErrorsResult(updateUserRequestValidation);
+            var validationResultErrors = _requestValidationService.GetValidationErrorsResult(updateUserRequestValidation);
 
             if (validationResultErrors != null)
             {
