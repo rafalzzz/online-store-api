@@ -54,6 +54,7 @@ builder.Services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
 builder.Services.AddScoped<IValidator<ResetPasswordRequest>, ResetPasswordRequestValidator>();
 builder.Services.AddScoped<IValidator<ChangePasswordRequest>, ChangePasswordRequestValidator>();
 builder.Services.AddScoped<IValidator<UpdateUserRequest>, UpdateUserRequestValidator>();
+builder.Services.AddScoped<IValidator<AddAddressRequest>, AddAddressRequestValidator>();
 
 builder.Services.AddControllers();
 

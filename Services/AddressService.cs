@@ -10,6 +10,8 @@ namespace OnlineStoreAPI.Services
         List<UserAddressDto> GetUserAddresses(int id);
         UserAddressDto AddAddress(int userId, AddAddressRequest addAddressDto);
         UserAddressDto? GetAddress(int userId, int id);
+        UserAddressDto? UpdateUserAddress(int userId, int id, AddAddressRequest updateAddressDto);
+        bool DeleteUserAddress(int userId, int id);
     }
 
     public class AddressService : IAddressService
@@ -25,6 +27,8 @@ namespace OnlineStoreAPI.Services
             _dbContext = dbContext;
             _mapper = mapper;
         }
+
+
 
         public List<UserAddressDto> GetUserAddresses(int id)
         {
@@ -57,15 +61,60 @@ namespace OnlineStoreAPI.Services
             return addressesDto;
         }
 
-        public UserAddressDto? GetAddress(int userId, int id)
+        private UserAddress? GetUserAddress(int userId, int id)
         {
             var address = _dbContext.UserAddresses
             .FirstOrDefault(address => address.UserId == userId && address.Id == id);
+
+            return address;
+        }
+
+        public UserAddressDto? GetAddress(int userId, int id)
+        {
+            var address = GetUserAddress(userId, id);
 
             if (address is null) return null;
 
             UserAddressDto addressDto = _mapper.Map<UserAddressDto>(address);
             return addressDto;
+        }
+
+        private UserAddressDto? UpdateAddress(UserAddress address, AddAddressRequest updateAddressDto)
+        {
+            address.AddressName = updateAddressDto.AddressName;
+            address.Country = updateAddressDto.Country;
+            address.City = updateAddressDto.City;
+            address.Address = updateAddressDto.Address;
+            address.PostalCode = updateAddressDto.PostalCode;
+            address.PhoneNumber = updateAddressDto.PhoneNumber;
+
+            _dbContext.SaveChanges();
+
+            UserAddressDto updatedAddressDto = _mapper.Map<UserAddressDto>(address);
+
+            return updatedAddressDto;
+        }
+
+        public UserAddressDto? UpdateUserAddress(int userId, int id, AddAddressRequest updateAddressDto)
+        {
+            var address = GetUserAddress(userId, id);
+
+            if (address is null) return null;
+
+            UserAddressDto? updatedAddressDto = UpdateAddress(address, updateAddressDto);
+            return updatedAddressDto;
+        }
+
+        public bool DeleteUserAddress(int userId, int id)
+        {
+            var address = GetUserAddress(userId, id);
+
+            if (address is null) return false;
+
+            _dbContext.UserAddresses.Remove(address);
+            _dbContext.SaveChanges();
+
+            return true;
         }
     }
 }
