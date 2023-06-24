@@ -4,9 +4,9 @@ using OnlineStoreAPI.Requests;
 
 namespace OnlineStoreAPI.Validations
 {
-    public class UpdateUserRequestValidator : AbstractValidator<UpdateUserRequest>
+    public class UserRequestDtoValidator : AbstractValidator<UserRequestDto>
     {
-        public UpdateUserRequestValidator()
+        public UserRequestDtoValidator()
         {
             RuleFor(requestBody => requestBody.Id)
             .Cascade(CascadeMode.Stop)

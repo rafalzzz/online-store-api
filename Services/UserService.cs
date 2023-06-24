@@ -19,8 +19,8 @@ namespace OnlineStoreAPI.Services
         bool CheckUserRefreshToken(User? user, string token);
         void RemoveUserRefreshToken(string token);
         bool ChangeUserPassword(string email, string password);
-        UpdateUserDto? GetUserData(string email);
-        UpdateUserDto? UpdateUser(UpdateUserRequest updateUserDto);
+        UserResponseDto? GetUserData(string email);
+        UserResponseDto? UpdateUser(UserRequestDto UserResponseDto);
     }
 
     public class UserService : IUserService
@@ -178,30 +178,30 @@ namespace OnlineStoreAPI.Services
             return true;
         }
 
-        public UpdateUserDto? GetUserData(string email)
+        public UserResponseDto? GetUserData(string email)
         {
             var user = GetUserByEmail(email);
 
             if (user is null) return null;
 
-            UpdateUserDto userDto = _mapper.Map<UpdateUserDto>(user);
+            UserResponseDto userDto = _mapper.Map<UserResponseDto>(user);
             return userDto;
         }
 
-        public UpdateUserDto? UpdateUser(UpdateUserRequest updateUserDto)
+        public UserResponseDto? UpdateUser(UserRequestDto UserResponseDto)
         {
-            var user = GetUserById(updateUserDto.Id);
+            var user = GetUserById(UserResponseDto.Id);
 
             if (user is null) return null;
 
-            user.FirstName = updateUserDto.FirstName;
-            user.LastName = updateUserDto.LastName;
-            user.Email = updateUserDto.Email;
-            user.Role = updateUserDto.Role;
+            user.FirstName = UserResponseDto.FirstName;
+            user.LastName = UserResponseDto.LastName;
+            user.Email = UserResponseDto.Email;
+            user.Role = UserResponseDto.Role;
 
             _dbContext.SaveChanges();
 
-            UpdateUserDto userDto = _mapper.Map<UpdateUserDto>(user);
+            UserResponseDto userDto = _mapper.Map<UserResponseDto>(user);
 
             return userDto;
         }

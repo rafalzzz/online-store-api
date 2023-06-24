@@ -40,18 +40,21 @@ builder.Services.AddSwaggerGen(SwaggerConfiguration.ConfigureSwagger);
 // Additional Services
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddTransient<IJwtService, JwtService>();
 builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
 builder.Services.AddTransient<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddTransient<IResetPasswordTokenService, ResetPasswordTokenService>();
 builder.Services.AddTransient<IEmailService, EmailService>();
+builder.Services.AddTransient<IRequestValidationService, RequestValidationService>();
 
 // Validators
 builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();
 builder.Services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
 builder.Services.AddScoped<IValidator<ResetPasswordRequest>, ResetPasswordRequestValidator>();
 builder.Services.AddScoped<IValidator<ChangePasswordRequest>, ChangePasswordRequestValidator>();
-builder.Services.AddScoped<IValidator<UpdateUserRequest>, UpdateUserRequestValidator>();
+builder.Services.AddScoped<IValidator<UserRequestDto>, UserRequestDtoValidator>();
+builder.Services.AddScoped<IValidator<AddressRequestDto>, AddressRequestDtoValidator>();
 
 builder.Services.AddControllers();
 
