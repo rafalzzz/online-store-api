@@ -6,6 +6,7 @@ using OnlineStoreAPI.Responses;
 using OnlineStoreAPI.Requests;
 using OnlineStoreAPI.Services;
 using OnlineStoreAPI.Variables;
+using OnlineStoreAPI.Models;
 
 namespace OnlineStoreAPI.Controllers
 {
@@ -14,17 +15,17 @@ namespace OnlineStoreAPI.Controllers
     {
         IAddressService _addressService;
         private readonly IRequestValidationService _requestValidationService;
-        private readonly IValidator<AddAddressRequest> _addAddressValidator;
+        private readonly IValidator<AddressRequestDto> _addressRequestDtoValidator;
 
         public AddressController(
             IAddressService addressService,
             IRequestValidationService requestValidationService,
-            IValidator<AddAddressRequest> addAddressValidator
+            IValidator<AddressRequestDto> addressRequestDtoValidator
         )
         {
             _addressService = addressService;
             _requestValidationService = requestValidationService;
-            _addAddressValidator = addAddressValidator;
+            _addressRequestDtoValidator = addressRequestDtoValidator;
         }
 
         private int GetUserId(IEnumerable<Claim> claims)
@@ -33,31 +34,38 @@ namespace OnlineStoreAPI.Controllers
             return int.Parse(userId);
         }
 
+        private IEnumerable<ValidationError>? ValidateAddressRequestDto(AddressRequestDto addressDto)
+        {
+            var addAddressRequestValidation = _addressRequestDtoValidator.Validate(addressDto);
+            var validationResultErrors = _requestValidationService.GetValidationErrorsResult(addAddressRequestValidation);
+
+            return validationResultErrors;
+        }
+
         [HttpGet]
         [Authorize]
         public ActionResult GetUserAddresses()
         {
             int userId = GetUserId(User.Claims);
-            List<UserAddressDto> addresses = _addressService.GetUserAddresses(userId);
+            List<AddressResponseDto> addresses = _addressService.GetUserAddresses(userId);
             return Ok(addresses);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{addressId}")]
         [Authorize]
-        public ActionResult GetAddress([FromRoute] int addressId)
+        public ActionResult GetUserAddress([FromRoute] int addressId)
         {
             int userId = GetUserId(User.Claims);
-            UserAddressDto? address = _addressService.GetAddress(userId, addressId);
+            AddressResponseDto? address = _addressService.GetAddress(userId, addressId);
             if (address is null) return NotFound();
             return Ok(address);
         }
 
         [HttpPost]
         [Authorize]
-        public ActionResult AddAddress([FromBody] AddAddressRequest addAddressDto)
+        public ActionResult AddAddress([FromBody] AddressRequestDto addressDto)
         {
-            var addAddressRequestValidation = _addAddressValidator.Validate(addAddressDto);
-            var validationResultErrors = _requestValidationService.GetValidationErrorsResult(addAddressRequestValidation);
+            IEnumerable<ValidationError>? validationResultErrors = ValidateAddressRequestDto(addressDto);
 
             if (validationResultErrors != null)
             {
@@ -65,16 +73,15 @@ namespace OnlineStoreAPI.Controllers
             }
 
             int userId = GetUserId(User.Claims);
-            UserAddressDto newAddress = _addressService.AddAddress(userId, addAddressDto);
+            AddressResponseDto newAddress = _addressService.AddAddress(userId, addressDto);
             return Created($"/api/users/{newAddress.Id}", newAddress);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{addressId}")]
         [Authorize]
-        public ActionResult UpdateAddress([FromRoute] int addressId, [FromBody] AddAddressRequest updateAddressDto)
+        public ActionResult UpdateAddress([FromRoute] int addressId, [FromBody] AddressRequestDto addressDto)
         {
-            var updateAddressRequestValidation = _addAddressValidator.Validate(updateAddressDto);
-            var validationResultErrors = _requestValidationService.GetValidationErrorsResult(updateAddressRequestValidation);
+            IEnumerable<ValidationError>? validationResultErrors = ValidateAddressRequestDto(addressDto);
 
             if (validationResultErrors != null)
             {
@@ -82,11 +89,17 @@ namespace OnlineStoreAPI.Controllers
             }
 
             int userId = GetUserId(User.Claims);
-            UserAddressDto updatedAddressDto = _addressService.UpdateUserAddress(userId, addressId, updateAddressDto);
+            AddressResponseDto updatedAddressDto = _addressService.UpdateUserAddress(userId, addressId, addressDto);
+
+            if (updatedAddressDto is null)
+            {
+                return NotFound();
+            }
+
             return Ok(updatedAddressDto);
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{addressId}")]
         [Authorize]
         public ActionResult DeleteAddress([FromRoute] int addressId)
         {

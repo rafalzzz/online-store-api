@@ -3,9 +3,9 @@ using OnlineStoreAPI.Requests;
 
 namespace OnlineStoreAPI.Validations
 {
-    public class AddAddressRequestValidator : AbstractValidator<AddAddressRequest>
+    public class AddressRequestDtoValidator : AbstractValidator<AddressRequestDto>
     {
-        public AddAddressRequestValidator()
+        public AddressRequestDtoValidator()
         {
             RuleFor(requestBody => requestBody.AddressName)
             .NotEmpty().WithMessage("AddressName is required.")
@@ -25,11 +25,11 @@ namespace OnlineStoreAPI.Validations
 
             RuleFor(requestBody => requestBody.PostalCode)
                 .NotEmpty().WithMessage("PostalCode is required.")
-                .Matches(@"^\d{2}-\d{3}$").WithMessage("PostalCode must be in the '00-000' format.");
+                .Matches(@"^\d{2}-\d{3}$").WithMessage("PostalCode must be in the 'XX-XXX' format.");
 
             RuleFor(requestBody => requestBody.PhoneNumber)
                 .NotEmpty().WithMessage("PhoneNumber is required.")
-                .Matches(@"^\+\d{2}\s\d{3}\s\d{3}\s\d{3}$").WithMessage("PhoneNumber must be in the '+48 123 456 789' format.");
+                .Matches(@"^\+\d{2}\s\d{3}\s\d{3}\s\d{3}$").WithMessage("PhoneNumber must be in the '+XX XXX XXX XXX' format.");
         }
     }
 }

@@ -21,7 +21,7 @@ namespace OnlineStoreAPI.Controllers
         private readonly IValidator<LoginRequest> _loginValidator;
         private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
         private readonly IValidator<ChangePasswordRequest> _changePasswordValidator;
-        private readonly IValidator<UpdateUserRequest> _updateUserValidator;
+        private readonly IValidator<UserRequestDto> _userRequestDtoValidator;
 
         public UserController(
             IUserService userService,
@@ -33,7 +33,7 @@ namespace OnlineStoreAPI.Controllers
             IValidator<LoginRequest> loginValidator,
             IValidator<ResetPasswordRequest> resetPasswordValidator,
             IValidator<ChangePasswordRequest> changePasswordValidator,
-            IValidator<UpdateUserRequest> updateUserValidator
+            IValidator<UserRequestDto> userRequestDtoValidator
             )
         {
             _userService = userService;
@@ -45,7 +45,7 @@ namespace OnlineStoreAPI.Controllers
             _loginValidator = loginValidator;
             _resetPasswordValidator = resetPasswordValidator;
             _changePasswordValidator = changePasswordValidator;
-            _updateUserValidator = updateUserValidator;
+            _userRequestDtoValidator = userRequestDtoValidator;
         }
 
         [HttpPost]
@@ -189,19 +189,19 @@ namespace OnlineStoreAPI.Controllers
 
         [HttpPut(UserControllerEndpoints.UserData)]
         [Authorize(Policy = PolicyNames.AdminOnly)]
-        public ActionResult UpdateUserData([FromBody] UpdateUserRequest updateUserDto)
+        public ActionResult UpdateUserData([FromBody] UserRequestDto UserResponseDto)
         {
-            var updateUserRequestValidation = _updateUserValidator.Validate(updateUserDto);
-            var validationResultErrors = _requestValidationService.GetValidationErrorsResult(updateUserRequestValidation);
+            var UserRequestDtoValidation = _userRequestDtoValidator.Validate(UserResponseDto);
+            var validationResultErrors = _requestValidationService.GetValidationErrorsResult(UserRequestDtoValidation);
 
             if (validationResultErrors != null)
             {
                 return BadRequest(validationResultErrors);
             }
 
-            var updatedUser = _userService.UpdateUser(updateUserDto);
+            var updatedUser = _userService.UpdateUser(UserResponseDto);
 
-            if (updatedUser is null) return NotFound($"User with id {updateUserDto.Id} does not exist");
+            if (updatedUser is null) return NotFound($"User with id {UserResponseDto.Id} does not exist");
             return Ok(updatedUser);
         }
     }

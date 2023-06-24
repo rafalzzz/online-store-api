@@ -1,9 +1,7 @@
-
-namespace OnlineStoreAPI.Responses
+namespace OnlineStoreAPI.Requests
 {
-    public class UserAddressDto
+    public class AddressRequestDto
     {
-        public int Id { get; set; }
         public string AddressName { get; set; }
         public string Country { get; set; }
         public string City { get; set; }

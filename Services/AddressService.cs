@@ -7,10 +7,10 @@ namespace OnlineStoreAPI.Services
 {
     public interface IAddressService
     {
-        List<UserAddressDto> GetUserAddresses(int id);
-        UserAddressDto AddAddress(int userId, AddAddressRequest addAddressDto);
-        UserAddressDto? GetAddress(int userId, int id);
-        UserAddressDto? UpdateUserAddress(int userId, int id, AddAddressRequest updateAddressDto);
+        List<AddressResponseDto> GetUserAddresses(int id);
+        AddressResponseDto AddAddress(int userId, AddressRequestDto addAddressDto);
+        AddressResponseDto? GetAddress(int userId, int id);
+        AddressResponseDto? UpdateUserAddress(int userId, int id, AddressRequestDto updateAddressDto);
         bool DeleteUserAddress(int userId, int id);
     }
 
@@ -30,17 +30,17 @@ namespace OnlineStoreAPI.Services
 
 
 
-        public List<UserAddressDto> GetUserAddresses(int id)
+        public List<AddressResponseDto> GetUserAddresses(int id)
         {
             var addresses = _dbContext.UserAddresses
             .Where(address => address.UserId == id)
             .ToList();
 
-            List<UserAddressDto> addressesDtos = _mapper.Map<List<UserAddressDto>>(addresses);
+            List<AddressResponseDto> addressesDtos = _mapper.Map<List<AddressResponseDto>>(addresses);
             return addressesDtos;
         }
 
-        public UserAddressDto AddAddress(int userId, AddAddressRequest addAddressDto)
+        public AddressResponseDto AddAddress(int userId, AddressRequestDto addAddressDto)
         {
 
             var newAddress = new UserAddress
@@ -57,7 +57,7 @@ namespace OnlineStoreAPI.Services
             _dbContext.UserAddresses.Add(newAddress);
             _dbContext.SaveChanges();
 
-            UserAddressDto addressesDto = _mapper.Map<UserAddressDto>(newAddress);
+            AddressResponseDto addressesDto = _mapper.Map<AddressResponseDto>(newAddress);
             return addressesDto;
         }
 
@@ -69,17 +69,17 @@ namespace OnlineStoreAPI.Services
             return address;
         }
 
-        public UserAddressDto? GetAddress(int userId, int id)
+        public AddressResponseDto? GetAddress(int userId, int id)
         {
             var address = GetUserAddress(userId, id);
 
             if (address is null) return null;
 
-            UserAddressDto addressDto = _mapper.Map<UserAddressDto>(address);
+            AddressResponseDto addressDto = _mapper.Map<AddressResponseDto>(address);
             return addressDto;
         }
 
-        private UserAddressDto? UpdateAddress(UserAddress address, AddAddressRequest updateAddressDto)
+        private AddressResponseDto? UpdateAddress(UserAddress address, AddressRequestDto updateAddressDto)
         {
             address.AddressName = updateAddressDto.AddressName;
             address.Country = updateAddressDto.Country;
@@ -90,18 +90,18 @@ namespace OnlineStoreAPI.Services
 
             _dbContext.SaveChanges();
 
-            UserAddressDto updatedAddressDto = _mapper.Map<UserAddressDto>(address);
+            AddressResponseDto updatedAddressDto = _mapper.Map<AddressResponseDto>(address);
 
             return updatedAddressDto;
         }
 
-        public UserAddressDto? UpdateUserAddress(int userId, int id, AddAddressRequest updateAddressDto)
+        public AddressResponseDto? UpdateUserAddress(int userId, int id, AddressRequestDto updateAddressDto)
         {
             var address = GetUserAddress(userId, id);
 
             if (address is null) return null;
 
-            UserAddressDto? updatedAddressDto = UpdateAddress(address, updateAddressDto);
+            AddressResponseDto? updatedAddressDto = UpdateAddress(address, updateAddressDto);
             return updatedAddressDto;
         }
 
